@@ -1,0 +1,1349 @@
+<!DOCTYPE html>
+<html lang="pt-PT" class="h-full bg-slate-50">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DMN + Scrum Toolkit</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    * { 
+      -webkit-tap-highlight-color: transparent;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    
+    /* Barras de deslocamento personalizadas */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+    
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .nav-btn.active { color: #2563eb; font-weight: 700; }
+    .nav-btn.active i { transform: translateY(-2px) scale(1.1); color: #2563eb; }
+
+    .glass-card {
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.05);
+    }
+
+    /* Estilo dos nós do diagrama DRD */
+    .drd-node {
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .drd-node:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -5px rgba(37, 99, 235, 0.15);
+    }
+  </style>
+</head>
+<body class="text-slate-800 flex flex-col min-h-full pb-20 md:pb-6">
+
+  <!-- Cabeçalho Superior -->
+  <header class="bg-gradient-to-r from-blue-700 via-indigo-700 to-slate-900 text-white px-4 py-4 sticky top-0 z-30 shadow-md">
+    <div class="max-w-4xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-blue-500/20 backdrop-blur border border-blue-400/30 flex items-center justify-center text-blue-200 shadow-inner">
+          <i class="fas fa-sitemap text-lg"></i>
+        </div>
+        <div>
+          <h1 class="text-lg font-bold tracking-tight leading-tight flex items-center gap-2">
+            DMN + Scrum
+            <span class="text-[10px] uppercase tracking-wider font-semibold bg-blue-500/30 border border-blue-300/30 text-blue-100 px-2 py-0.5 rounded-full">v2.5</span>
+          </h1>
+          <p class="text-xs text-blue-200">Decisões de Negócio integradas ao Backlog Ágil</p>
+        </div>
+      </div>
+
+      <!-- Menu de Ações Rápidas -->
+      <div class="flex items-center gap-2">
+        <button onclick="openPresetModal()" title="Carregar modelo de exemplo" class="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium flex items-center gap-1.5 transition">
+          <i class="fas fa-folder-open text-amber-300"></i>
+          <span class="hidden sm:inline">Exemplos</span>
+        </button>
+        <button onclick="openDataModal()" title="Exportar ou Importar dados" class="p-2 rounded-lg bg-white/10 hover:bg-white/20 text-white text-xs font-medium flex items-center gap-1.5 transition">
+          <i class="fas fa-cog"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Abas Desktop (Visíveis em ecrãs médios e grandes) -->
+    <div class="hidden md:flex max-w-4xl mx-auto mt-4 gap-1 border-t border-white/10 pt-3">
+      <button onclick="showTab('mapeamento')" class="desktop-tab px-4 py-2 rounded-lg text-xs font-semibold text-blue-100 hover:text-white hover:bg-white/10 transition flex items-center gap-2" data-tab="mapeamento">
+        <i class="fas fa-exchange-alt"></i> Mapeamento
+      </button>
+      <button onclick="showTab('modelo')" class="desktop-tab px-4 py-2 rounded-lg text-xs font-semibold text-blue-100 hover:text-white hover:bg-white/10 transition flex items-center gap-2" data-tab="modelo">
+        <i class="fas fa-sitemap"></i> Modelo DMN
+      </button>
+      <button onclick="showTab('simulador')" class="desktop-tab px-4 py-2 rounded-lg text-xs font-semibold text-blue-100 hover:text-white hover:bg-white/10 transition flex items-center gap-2" data-tab="simulador">
+        <i class="fas fa-play-circle"></i> Simulador
+      </button>
+      <button onclick="showTab('stories')" class="desktop-tab px-4 py-2 rounded-lg text-xs font-semibold text-blue-100 hover:text-white hover:bg-white/10 transition flex items-center gap-2" data-tab="stories">
+        <i class="fas fa-list-check"></i> User Stories
+      </button>
+      <button onclick="showTab('checklist')" class="desktop-tab px-4 py-2 rounded-lg text-xs font-semibold text-blue-100 hover:text-white hover:bg-white/10 transition flex items-center gap-2" data-tab="checklist">
+        <i class="fas fa-tasks"></i> Checklists
+      </button>
+      <button onclick="showTab('guia')" class="desktop-tab px-4 py-2 rounded-lg text-xs font-semibold text-blue-100 hover:text-white hover:bg-white/10 transition flex items-center gap-2" data-tab="guia">
+        <i class="fas fa-book-open"></i> Guia
+      </button>
+    </div>
+  </header>
+
+  <!-- Conteúdo Principal -->
+  <main class="max-w-4xl mx-auto w-full px-4 py-5 flex-1">
+
+    <!-- 1. MAPEAMENTO DMN <-> SCRUM -->
+    <section id="mapeamento" class="tab-content active space-y-5">
+      <div class="glass-card rounded-2xl p-5 border border-slate-200">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+            <i class="fas fa-map"></i>
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-slate-800">Matriz de Equivalência DMN ↔ Scrum</h2>
+            <p class="text-xs text-slate-500">Como converter a notação DMN em itens de backlog ágeis</p>
+          </div>
+        </div>
+
+        <div class="grid sm:grid-cols-2 gap-3 mt-4">
+          <!-- Cartão 1 -->
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start gap-3">
+            <div class="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">1</div>
+            <div>
+              <span class="text-xs font-bold uppercase text-blue-600 tracking-wider">Decisão Principal (Raiz)</span>
+              <div class="font-semibold text-sm text-slate-800 mt-0.5">Epic ou Feature</div>
+              <p class="text-xs text-slate-500 mt-1">Representa o objetivo de negócio completo (ex: "Elegibilidade para Empréstimo").</p>
+            </div>
+          </div>
+
+          <!-- Cartão 2 -->
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start gap-3">
+            <div class="w-8 h-8 rounded-lg bg-indigo-600 text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">2</div>
+            <div>
+              <span class="text-xs font-bold uppercase text-indigo-600 tracking-wider">Sub-decisões</span>
+              <div class="font-semibold text-sm text-slate-800 mt-0.5">User Stories</div>
+              <p class="text-xs text-slate-500 mt-1">Regras intermédias que podem ser entregues e testadas de forma independente num Sprint.</p>
+            </div>
+          </div>
+
+          <!-- Cartão 3 -->
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start gap-3">
+            <div class="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">3</div>
+            <div>
+              <span class="text-xs font-bold uppercase text-emerald-600 tracking-wider">Input Data + Knowledge</span>
+              <div class="font-semibold text-sm text-slate-800 mt-0.5">Critérios de Aceitação</div>
+              <p class="text-xs text-slate-500 mt-1">Definem os atributos de entrada necessários e as políticas de negócio de suporte.</p>
+            </div>
+          </div>
+
+          <!-- Cartão 4 -->
+          <div class="p-3.5 rounded-xl bg-slate-50 border border-slate-200/80 flex items-start gap-3">
+            <div class="w-8 h-8 rounded-lg bg-purple-600 text-white flex items-center justify-center font-bold text-xs shrink-0 mt-0.5">4</div>
+            <div>
+              <span class="text-xs font-bold uppercase text-purple-600 tracking-wider">Decision Table / FEEL</span>
+              <div class="font-semibold text-sm text-slate-800 mt-0.5">Testes BDD & DoD</div>
+              <p class="text-xs text-slate-500 mt-1">As linhas da tabela transformam-se em cenários de teste automatizados (Dado/Quando/Então).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dica prática -->
+      <div class="bg-amber-50/90 border border-amber-200 rounded-2xl p-4 flex gap-3 text-amber-900">
+        <i class="fas fa-lightbulb text-amber-500 text-lg mt-0.5"></i>
+        <div class="text-xs leading-relaxed">
+          <strong class="font-semibold block mb-0.5 text-amber-950">Boas Práticas de Refinamento:</strong>
+          Crie sempre o <strong>Modelo Esquelético (Skeletal Model)</strong> na fase de Discovery. Se uma decisão for muito complexa para caber num Sprint, divida o gráfico de decisão em ramos verticais.
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. MODELO DMN & EDITOR DE DECISÕES -->
+    <section id="modelo" class="tab-content space-y-4">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-2xl border border-slate-200">
+        <div>
+          <h2 class="text-base font-bold text-slate-800">Modelo Esquelético (DRD)</h2>
+          <p class="text-xs text-slate-500">Mapeie as decisões e as suas dependências hierárquicas</p>
+        </div>
+        
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <!-- Toggle Visão -->
+          <div class="bg-slate-100 p-1 rounded-xl flex gap-1 text-xs">
+            <button id="btn-view-list" onclick="setModeloView('list')" class="px-3 py-1.5 rounded-lg font-medium bg-white text-blue-600 shadow-sm transition">
+              <i class="fas fa-list mr-1"></i> Lista
+            </button>
+            <button id="btn-view-graph" onclick="setModeloView('graph')" class="px-3 py-1.5 rounded-lg font-medium text-slate-600 hover:text-slate-900 transition">
+              <i class="fas fa-project-diagram mr-1"></i> Diagrama
+            </button>
+          </div>
+
+          <button onclick="addDecision()" class="ml-auto bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2 rounded-xl shadow-sm active:scale-95 transition flex items-center gap-1.5">
+            <i class="fas fa-plus"></i> Nova Decisão
+          </button>
+        </div>
+      </div>
+
+      <!-- VISÃO EM LISTA -->
+      <div id="decisions-list-container">
+        <div id="decisions-list" class="space-y-3"></div>
+
+        <!-- Estado vazio -->
+        <div id="empty-state" class="text-center py-12 glass-card rounded-2xl border border-dashed border-slate-300">
+          <div class="w-12 h-12 rounded-full bg-blue-50 text-blue-500 flex items-center justify-center mx-auto mb-3 text-lg">
+            <i class="fas fa-sitemap"></i>
+          </div>
+          <p class="text-sm font-semibold text-slate-700">Nenhuma decisão registada</p>
+          <p class="text-xs text-slate-400 mt-1 mb-4">Adicione uma decisão para começar ou carregue um exemplo.</p>
+          <button onclick="openPresetModal()" class="inline-flex items-center gap-2 bg-slate-800 text-white text-xs font-medium px-4 py-2 rounded-xl hover:bg-slate-700 transition">
+            <i class="fas fa-folder-open text-amber-300"></i> Carregar Exemplo Pronto
+          </button>
+        </div>
+      </div>
+
+      <!-- VISÃO EM DIAGRAMA (GRAPH) -->
+      <div id="decisions-graph-container" class="hidden">
+        <div class="glass-card rounded-2xl p-5 border border-slate-200 min-h-[300px]">
+          <div class="flex items-center justify-between mb-4">
+            <span class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Visualização de Dependências (DRD)</span>
+            <span class="text-[11px] text-slate-400">As setas indicam o fluxo de dependência</span>
+          </div>
+          <div id="graph-canvas" class="flex flex-col items-center justify-center space-y-6 py-4"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. SIMULADOR DE REGRAS (ENGINE DMN) -->
+    <section id="simulador" class="tab-content space-y-4">
+      <div class="glass-card rounded-2xl p-5 border border-slate-200">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center font-bold">
+            <i class="fas fa-play"></i>
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-slate-800">Simulador de Decisão (FEEL Engine)</h2>
+            <p class="text-xs text-slate-500">Insira valores e teste se a lógica de decisão devolve o resultado esperado</p>
+          </div>
+        </div>
+
+        <div class="mb-4">
+          <label class="block text-xs font-semibold text-slate-600 mb-1">Selecione a Decisão para testar:</label>
+          <select id="simulator-select" onchange="loadSimulatorForm()" class="w-full text-sm border border-slate-200 rounded-xl px-3 py-2.5 bg-slate-50 focus:bg-white outline-none focus:ring-2 focus:ring-blue-500 transition">
+          </select>
+        </div>
+
+        <div id="simulator-body" class="space-y-4">
+          <!-- Form do simulador é injetado via JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. USER STORIES GENERATOR -->
+    <section id="stories" class="tab-content space-y-4">
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white p-4 rounded-2xl border border-slate-200">
+        <div>
+          <h2 class="text-base font-bold text-slate-800">Gerador de Artefactos Ágeis</h2>
+          <p class="text-xs text-slate-500">User Stories e Critérios formatados para Jira / Azure DevOps</p>
+        </div>
+        <div class="flex items-center gap-2">
+          <button onclick="exportJiraCSV()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold px-3 py-2 rounded-xl transition flex items-center gap-1.5">
+            <i class="fas fa-file-csv text-green-400"></i> Exportar CSV Jira
+          </button>
+          <button onclick="generateStories()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-3.5 py-2 rounded-xl shadow-sm active:scale-95 transition flex items-center gap-1.5">
+            <i class="fas fa-rotate"></i> Atualizar
+          </button>
+        </div>
+      </div>
+
+      <div id="stories-output" class="space-y-4"></div>
+    </section>
+
+    <!-- 5. CHECKLIST SCRUM -->
+    <section id="checklist" class="tab-content space-y-4">
+      <div class="flex items-center justify-between bg-white p-4 rounded-2xl border border-slate-200">
+        <div>
+          <h2 class="text-base font-bold text-slate-800">Checklist de Cerimónias Scrum</h2>
+          <p class="text-xs text-slate-500">Garanta a qualidade na aplicação de DMN no ciclo ágil</p>
+        </div>
+        <button onclick="resetChecklist()" class="text-xs text-slate-500 hover:text-red-600 font-medium transition">
+          <i class="fas fa-undo mr-1"></i> Repor
+        </button>
+      </div>
+
+      <div id="checklists-container" class="space-y-4"></div>
+    </section>
+
+    <!-- 6. GUIA RÁPIDO -->
+    <section id="guia" class="tab-content space-y-4">
+      <div class="glass-card rounded-2xl p-5 border border-slate-200">
+        <h2 class="text-base font-bold text-slate-800 mb-1">Guia Passo a Passo DMN + Scrum</h2>
+        <p class="text-xs text-slate-500 mb-4">Como orientar a equipa desde o Discovery até à entrega de valor</p>
+
+        <div class="space-y-3">
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 flex gap-3">
+            <div class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center text-xs font-bold shrink-0">1</div>
+            <div>
+              <div class="font-bold text-sm text-slate-800">Crie o Modelo Esquelético cedo</div>
+              <p class="text-xs text-slate-600 mt-1">Antes de codificar, desenhe a árvore de decisão (DRD) durante as sessões de Discovery com os Especialistas de Negócio (Domain Experts).</p>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 flex gap-3">
+            <div class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs font-bold shrink-0">2</div>
+            <div>
+              <div class="font-bold text-sm text-slate-800">Divida por Ramos Lógicos</div>
+              <p class="text-xs text-slate-600 mt-1">Nunca tente colocar uma árvore inteira numa única User Story. Cada ramo isolável de sub-decisão transforma-se numa User Story independente.</p>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 flex gap-3">
+            <div class="w-7 h-7 rounded-lg bg-emerald-600 text-white flex items-center justify-center text-xs font-bold shrink-0">3</div>
+            <div>
+              <div class="font-bold text-sm text-slate-800">Use o DRD no Sprint Planning</div>
+              <p class="text-xs text-slate-600 mt-1">Apresente o diagrama no Planning. As dependências entre decisões deixam claro para a equipa qual a Story a ser implementada primeiro.</p>
+            </div>
+          </div>
+
+          <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 flex gap-3">
+            <div class="w-7 h-7 rounded-lg bg-purple-600 text-white flex items-center justify-center text-xs font-bold shrink-0">4</div>
+            <div>
+              <div class="font-bold text-sm text-slate-800">Valide com BDD e Tabela de Decisão</div>
+              <p class="text-xs text-slate-600 mt-1">A sua Definition of Done (DoD) deve exigir que todas as linhas da Tabela de Decisão estejam cobertas por testes automatizados.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL DE TABELA DE DECISÃO -->
+  <div id="dt-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
+    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="px-5 py-4 bg-slate-800 text-white flex items-center justify-between">
+        <h3 class="font-bold text-sm flex items-center gap-2">
+          <i class="fas fa-table text-blue-400"></i>
+          <span id="dt-modal-title">Tabela de Decisão</span>
+        </h3>
+        <button onclick="closeDTModal()" class="text-slate-400 hover:text-white p-1">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="p-5 overflow-y-auto flex-1 space-y-4">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-slate-500 font-semibold">Hit Policy (Política de Resultado):</span>
+          <select id="dt-hit-policy" class="bg-slate-100 border border-slate-300 rounded-lg px-2.5 py-1 text-xs font-semibold">
+            <option value="F">FIRST (Primeira regra válida)</option>
+            <option value="U">UNIQUE (Apenas uma regra pode ser válida)</option>
+            <option value="A">ANY (Todas as válidas devem dar o mesmo resultado)</option>
+          </select>
+        </div>
+
+        <!-- Tabela -->
+        <div class="overflow-x-auto border border-slate-200 rounded-xl">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-100 border-b border-slate-200">
+              <tr id="dt-headers">
+                <!-- Injetado por JS -->
+              </tr>
+            </thead>
+            <tbody id="dt-rows" class="divide-y divide-slate-200">
+              <!-- Injetado por JS -->
+            </tbody>
+          </table>
+        </div>
+
+        <div class="flex justify-between items-center pt-2">
+          <button onclick="addDTRow()" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-3 py-1.5 rounded-lg transition">
+            <i class="fas fa-plus mr-1"></i> Nova Linha (Regra)
+          </button>
+          <span class="text-[11px] text-slate-400">Símbolo "-" representa qualquer valor</span>
+        </div>
+      </div>
+
+      <div class="px-5 py-3 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+        <button onclick="closeDTModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-200/60 rounded-xl transition">
+          Cancelar
+        </button>
+        <button onclick="saveDecisionTable()" class="px-4 py-2 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm transition">
+          Guardar Tabela
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE PRESETS (EXEMPLOS) -->
+  <div id="preset-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
+          <i class="fas fa-folder-open text-amber-500"></i> Carregar Exemplo Pronto
+        </h3>
+        <button onclick="closePresetModal()" class="text-slate-400 hover:text-slate-600">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <p class="text-xs text-slate-500">Selecione um cenário pré-configurado de modelo DMN para importar para o seu projeto:</p>
+
+      <div class="space-y-2">
+        <button onclick="loadPreset('credito')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition group">
+          <div class="font-bold text-sm text-slate-800 group-hover:text-blue-700">💳 Aprovação de Crédito Bancário</div>
+          <div class="text-xs text-slate-500 mt-0.5">Mapeia Rendimento, Score de Crédito e Regra de Risco para concessão de crédito.</div>
+        </button>
+
+        <button onclick="loadPreset('desconto')" class="w-full text-left p-3 rounded-xl border border-slate-200 hover:border-blue-500 hover:bg-blue-50/50 transition group">
+          <div class="font-bold text-sm text-slate-800 group-hover:text-blue-700">🏷️ Regra de Desconto no E-commerce</div>
+          <div class="text-xs text-slate-500 mt-0.5">Calcula desconto baseado na Categoria do Cliente (VIP/Normal) e Valor do Carrinho.</div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE DADOS (EXPORT/IMPORT/BACKUP) -->
+  <div id="data-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full shadow-2xl p-5 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-base text-slate-800 flex items-center gap-2">
+          <i class="fas fa-database text-blue-600"></i> Gerir Dados
+        </h3>
+        <button onclick="closeDataModal()" class="text-slate-400 hover:text-slate-600">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <button onclick="exportJSON()" class="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-900 text-white font-medium p-3 rounded-xl transition">
+          <i class="fas fa-download"></i> Descarregar Cópia de Segurança JSON
+        </button>
+
+        <div>
+          <label class="block text-slate-600 font-semibold mb-1">Restaurar a partir de ficheiro JSON:</label>
+          <input type="file" id="import-file" accept=".json" onchange="importJSON(event)" class="w-full text-xs text-slate-500 border border-slate-200 rounded-xl p-2 bg-slate-50">
+        </div>
+
+        <hr class="border-slate-200">
+
+        <button onclick="clearAllData()" class="w-full flex items-center justify-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 font-semibold p-3 rounded-xl transition border border-red-200">
+          <i class="fas fa-trash-alt"></i> Eliminar Todos os Dados
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Navegação Inferior para Dispositivos Móveis -->
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur border-t border-slate-200 flex justify-around items-center h-16 z-30 px-1 shadow-lg">
+    <button onclick="showTab('mapeamento')" class="nav-btn active flex flex-col items-center justify-center w-full h-full text-[10px] gap-1 text-slate-500 transition" data-tab="mapeamento">
+      <i class="fas fa-exchange-alt text-base"></i>
+      <span>Mapa</span>
+    </button>
+    <button onclick="showTab('modelo')" class="nav-btn flex flex-col items-center justify-center w-full h-full text-[10px] gap-1 text-slate-500 transition" data-tab="modelo">
+      <i class="fas fa-sitemap text-base"></i>
+      <span>Modelo</span>
+    </button>
+    <button onclick="showTab('simulador')" class="nav-btn flex flex-col items-center justify-center w-full h-full text-[10px] gap-1 text-slate-500 transition" data-tab="simulador">
+      <i class="fas fa-play-circle text-base"></i>
+      <span>Simular</span>
+    </button>
+    <button onclick="showTab('stories')" class="nav-btn flex flex-col items-center justify-center w-full h-full text-[10px] gap-1 text-slate-500 transition" data-tab="stories">
+      <i class="fas fa-list-check text-base"></i>
+      <span>Stories</span>
+    </button>
+    <button onclick="showTab('checklist')" class="nav-btn flex flex-col items-center justify-center w-full h-full text-[10px] gap-1 text-slate-500 transition" data-tab="checklist">
+      <i class="fas fa-tasks text-base"></i>
+      <span>Check</span>
+    </button>
+    <button onclick="showTab('guia')" class="nav-btn flex flex-col items-center justify-center w-full h-full text-[10px] gap-1 text-slate-500 transition" data-tab="guia">
+      <i class="fas fa-book-open text-base"></i>
+      <span>Guia</span>
+    </button>
+  </nav>
+
+  <!-- Notificação Toast -->
+  <div id="toast" class="fixed top-20 right-4 z-50 bg-slate-900 text-white text-xs font-medium px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2 transform translate-x-full transition-transform duration-300">
+    <i id="toast-icon" class="fas fa-check-circle text-emerald-400"></i>
+    <span id="toast-msg">Operação realizada!</span>
+  </div>
+
+  <script>
+    // ========== EXEMPLOS PRONTOS ==========
+    const PRESETS = {
+      credito: [
+        {
+          id: 'dec_1',
+          name: 'Decisão de Aprovação de Crédito',
+          parentId: null,
+          description: 'Decisão final determinando se a proposta é Aprovada, Recusada ou enviada para Análise Manual.',
+          inputs: 'Rendimento Mensal, Score do Cliente, Histórico de Incumprimentos',
+          table: {
+            hitPolicy: 'F',
+            inputs: ['Score', 'Rendimento (€)', 'Possui Incumprimento'],
+            outputName: 'Resultado da Proposta',
+            rules: [
+              ['< 400', '-', 'true', 'Recusado'],
+              ['>= 750', '>= 3000', 'false', 'Aprovado Direto'],
+              ['>= 600', '>= 2000', 'false', 'Análise Manual'],
+              ['-', '-', '-', 'Recusado']
+            ]
+          }
+        },
+        {
+          id: 'dec_2',
+          name: 'Avaliação de Risco do Perfil',
+          parentId: 'dec_1',
+          description: 'Classifica o perfil do cliente em Alto, Médio ou Baixo Risco.',
+          inputs: 'Score do Cliente, Idade do Cliente',
+          table: {
+            hitPolicy: 'F',
+            inputs: ['Score', 'Idade'],
+            outputName: 'Nível de Risco',
+            rules: [
+              ['>= 800', '>= 21', 'Baixo Risco'],
+              ['>= 600', '>= 18', 'Médio Risco'],
+              ['-', '-', 'Alto Risco']
+            ]
+          }
+        }
+      ],
+      desconto: [
+        {
+          id: 'desc_1',
+          name: 'Cálculo do Desconto do Carrinho',
+          parentId: null,
+          description: 'Define a percentagem final de desconto aplicável na compra.',
+          inputs: 'Valor Total, Categoria do Cliente',
+          table: {
+            hitPolicy: 'F',
+            inputs: ['Valor Total (€)', 'É Cliente VIP'],
+            outputName: 'Desconto (%)',
+            rules: [
+              ['>= 500', 'true', '20%'],
+              ['>= 500', 'false', '10%'],
+              ['>= 200', 'true', '10%'],
+              ['-', '-', '0%']
+            ]
+          }
+        }
+      ]
+    };
+
+    // ========== ESTADO GLOBAL ==========
+    let decisions = JSON.parse(localStorage.getItem('dmn-decisions-v4') || JSON.stringify(PRESETS.credito));
+    let checklists = JSON.parse(localStorage.getItem('dmn-checklists-v4') || '{}');
+    let activeEditingDTId = null;
+
+    // ========== TOAST NOTIFICATION ==========
+    function showToast(msg, icon = 'fa-check-circle text-emerald-400') {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-msg');
+      const toastIcon = document.getElementById('toast-icon');
+
+      toastMsg.innerText = msg;
+      toastIcon.className = `fas ${icon}`;
+      toast.classList.remove('translate-x-full');
+
+      setTimeout(() => {
+        toast.classList.add('translate-x-full');
+      }, 3000);
+    }
+
+    // ========== NAVEGAÇÃO ENTRE ABAS ==========
+    function showTab(tabName) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      
+      const targetSection = document.getElementById(tabName);
+      if (targetSection) targetSection.classList.add('active');
+
+      // Atualiza Bottom Nav
+      document.querySelectorAll('.nav-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-tab') === tabName);
+      });
+
+      // Atualiza Desktop Nav
+      document.querySelectorAll('.desktop-tab').forEach(btn => {
+        if (btn.getAttribute('data-tab') === tabName) {
+          btn.classList.add('bg-white/20', 'text-white');
+        } else {
+          btn.classList.remove('bg-white/20', 'text-white');
+        }
+      });
+
+      // Renderiza ecrãs dinâmicos
+      if (tabName === 'modelo') renderDecisions();
+      if (tabName === 'simulador') initSimulatorTab();
+      if (tabName === 'stories') generateStories();
+      if (tabName === 'checklist') renderChecklists();
+    }
+
+    // ========== LÓGICA DE DECISÕES ==========
+    function saveDecisions() {
+      localStorage.setItem('dmn-decisions-v4', JSON.stringify(decisions));
+    }
+
+    function addDecision() {
+      const id = 'dec_' + Date.now().toString(36);
+      decisions.push({
+        id: id,
+        name: '',
+        parentId: null,
+        description: '',
+        inputs: '',
+        table: {
+          hitPolicy: 'F',
+          inputs: ['Valor A', 'Valor B'],
+          outputName: 'Resultado',
+          rules: [
+            ['> 100', 'true', 'Aprovado'],
+            ['-', '-', 'Recusado']
+          ]
+        }
+      });
+
+      saveDecisions();
+      renderDecisions();
+      showToast('Nova decisão criada');
+    }
+
+    function updateDecision(id, field, value) {
+      const d = decisions.find(x => x.id === id);
+      if (d) {
+        d[field] = value;
+        saveDecisions();
+      }
+    }
+
+    function deleteDecision(id) {
+      decisions = decisions.filter(x => x.id !== id);
+      decisions.forEach(x => {
+        if (x.parentId === id) x.parentId = null;
+      });
+      saveDecisions();
+      renderDecisions();
+      showToast('Decisão removida', 'fa-trash-alt text-red-400');
+    }
+
+    function setModeloView(mode) {
+      const listContainer = document.getElementById('decisions-list-container');
+      const graphContainer = document.getElementById('decisions-graph-container');
+      const btnList = document.getElementById('btn-view-list');
+      const btnGraph = document.getElementById('btn-view-graph');
+
+      if (mode === 'graph') {
+        listContainer.classList.add('hidden');
+        graphContainer.classList.remove('hidden');
+        btnGraph.classList.add('bg-white', 'text-blue-600', 'shadow-sm');
+        btnList.classList.remove('bg-white', 'text-blue-600', 'shadow-sm');
+        renderGraphView();
+      } else {
+        graphContainer.classList.add('hidden');
+        listContainer.classList.remove('hidden');
+        btnList.classList.add('bg-white', 'text-blue-600', 'shadow-sm');
+        btnGraph.classList.remove('bg-white', 'text-blue-600', 'shadow-sm');
+      }
+    }
+
+    function renderDecisions() {
+      const list = document.getElementById('decisions-list');
+      const empty = document.getElementById('empty-state');
+
+      if (!list || !empty) return;
+      list.innerHTML = '';
+
+      if (decisions.length === 0) {
+        empty.style.display = 'block';
+        return;
+      }
+
+      empty.style.display = 'none';
+
+      decisions.forEach(d => {
+        let parentOptions = `<option value="">— Decisão Raiz (Sem Pai) —</option>`;
+        decisions.forEach(p => {
+          if (p.id !== d.id) {
+            const sel = (d.parentId === p.id) ? 'selected' : '';
+            parentOptions += `<option value="${p.id}" ${sel}>Sub-decisão de: ${p.name || 'Sem nome'}</option>`;
+          }
+        });
+
+        const card = document.createElement('div');
+        card.className = 'glass-card rounded-2xl p-4 space-y-3 transition border border-slate-200';
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-2 border-b border-slate-100 pb-2">
+            <div class="flex items-center gap-2 flex-1">
+              <div class="w-6 h-6 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center text-xs font-bold">
+                <i class="fas fa-sitemap"></i>
+              </div>
+              <input 
+                type="text" 
+                value="${escapeHtml(d.name)}" 
+                placeholder="Nome da Decisão (ex: Aprovação de Crédito)"
+                onchange="updateDecision('${d.id}', 'name', this.value)"
+                class="w-full text-sm font-bold text-slate-800 bg-transparent border-0 border-b border-transparent hover:border-slate-300 focus:border-blue-500 outline-none py-1 transition"
+              >
+            </div>
+            <button onclick="deleteDecision('${d.id}')" class="text-slate-400 hover:text-red-500 p-1.5 transition" title="Eliminar">
+              <i class="fas fa-trash-alt text-xs"></i>
+            </button>
+          </div>
+
+          <div class="grid sm:grid-cols-2 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1">Depende de (Decisão Pai):</label>
+              <select onchange="updateDecision('${d.id}', 'parentId', this.value || null)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:ring-2 focus:ring-blue-500">
+                ${parentOptions}
+              </select>
+            </div>
+            <div>
+              <label class="block text-slate-500 font-semibold mb-1">Dados de Entrada (Inputs):</label>
+              <input 
+                type="text" 
+                value="${escapeHtml(d.inputs || '')}" 
+                placeholder="Ex: Rendimento, Score, Idade"
+                onchange="updateDecision('${d.id}', 'inputs', this.value)"
+                class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:ring-2 focus:ring-blue-500"
+              >
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs text-slate-500 font-semibold mb-1">Descrição / Regra Geral:</label>
+            <input 
+              type="text" 
+              value="${escapeHtml(d.description || '')}" 
+              placeholder="Ex: Concede aprovação se o score for bom e o rendimento positivo."
+              onchange="updateDecision('${d.id}', 'description', this.value)"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs text-slate-700 outline-none focus:ring-2 focus:ring-blue-500"
+            >
+          </div>
+
+          <div class="pt-2 flex justify-between items-center border-t border-slate-100">
+            <button onclick="openDecisionTableModal('${d.id}')" class="text-xs font-semibold bg-indigo-50 hover:bg-indigo-100 text-indigo-700 px-3 py-1.5 rounded-xl transition flex items-center gap-1.5">
+              <i class="fas fa-table"></i> Editar Tabela de Decisão (${(d.table?.rules || []).length} regras)
+            </button>
+            
+            <span class="text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-md ${d.parentId ? 'bg-indigo-50 text-indigo-600' : 'bg-blue-50 text-blue-600'}">
+              ${d.parentId ? 'Sub-decisão' : 'Decisão Raiz'}
+            </span>
+          </div>
+        `;
+
+        list.appendChild(card);
+      });
+    }
+
+    // ========== DIAGRAMA GRÁFICO (DRD) ==========
+    function renderGraphView() {
+      const container = document.getElementById('graph-canvas');
+      if (!container) return;
+      container.innerHTML = '';
+
+      if (decisions.length === 0) {
+        container.innerHTML = `<p class="text-xs text-slate-400">Nenhuma decisão para apresentar no diagrama.</p>`;
+        return;
+      }
+
+      const roots = decisions.filter(d => !d.parentId);
+      
+      function buildTreeHTML(node) {
+        const children = decisions.filter(d => d.parentId === node.id);
+        
+        let childrenHTML = '';
+        if (children.length > 0) {
+          childrenHTML = `
+            <div class="flex items-center justify-center my-2 text-slate-300">
+              <i class="fas fa-arrow-up text-xs"></i>
+            </div>
+            <div class="flex flex-wrap justify-center gap-4">
+              ${children.map(child => buildTreeHTML(child)).join('')}
+            </div>
+          `;
+        }
+
+        return `
+          <div class="flex flex-col items-center">
+            <div class="drd-node bg-white border-2 ${node.parentId ? 'border-indigo-500' : 'border-blue-600'} rounded-2xl p-3 shadow-md min-w-[180px] max-w-[220px] text-center">
+              <span class="text-[10px] font-bold uppercase tracking-wider block ${node.parentId ? 'text-indigo-600' : 'text-blue-600'}">
+                ${node.parentId ? 'Sub-decisão' : 'Decisão Principal'}
+              </span>
+              <div class="font-bold text-xs text-slate-800 mt-1 truncate">${escapeHtml(node.name || 'Sem nome')}</div>
+              ${node.inputs ? `<div class="text-[10px] text-slate-400 mt-1 truncate"><i class="fas fa-sign-in-alt mr-1"></i>${escapeHtml(node.inputs)}</div>` : ''}
+            </div>
+            ${childrenHTML}
+          </div>
+        `;
+      }
+
+      const graphHTML = `
+        <div class="flex flex-wrap justify-center gap-8">
+          ${roots.map(root => buildTreeHTML(root)).join('')}
+        </div>
+      `;
+
+      container.innerHTML = graphHTML;
+    }
+
+    // ========== MODAL DE TABELA DE DECISÃO ==========
+    function openDecisionTableModal(id) {
+      activeEditingDTId = id;
+      const d = decisions.find(x => x.id === id);
+      if (!d) return;
+
+      if (!d.table) {
+        d.table = {
+          hitPolicy: 'F',
+          inputs: ['Valor A'],
+          outputName: 'Resultado',
+          rules: [['-', 'Aprovado']]
+        };
+      }
+
+      document.getElementById('dt-modal-title').innerText = `Tabela: ${d.name || 'Sem nome'}`;
+      document.getElementById('dt-hit-policy').value = d.table.hitPolicy || 'F';
+
+      renderDTTable();
+      document.getElementById('dt-modal').classList.remove('hidden');
+    }
+
+    function closeDTModal() {
+      document.getElementById('dt-modal').classList.add('hidden');
+      activeEditingDTId = null;
+    }
+
+    function renderDTTable() {
+      const d = decisions.find(x => x.id === activeEditingDTId);
+      if (!d || !d.table) return;
+
+      const headersEl = document.getElementById('dt-headers');
+      const rowsEl = document.getElementById('dt-rows');
+
+      // Headers
+      let hHTML = `<th class="px-3 py-2 text-slate-400 w-10 text-center">#</th>`;
+      d.table.inputs.forEach((inp, i) => {
+        hHTML += `
+          <th class="px-3 py-2 font-bold text-slate-700 bg-blue-50/60 border-r border-slate-200">
+            <div class="flex items-center justify-between">
+              <span>Entrada: ${escapeHtml(inp)}</span>
+            </div>
+          </th>`;
+      });
+      hHTML += `
+        <th class="px-3 py-2 font-bold text-emerald-800 bg-emerald-50/60">
+          Saída: ${escapeHtml(d.table.outputName || 'Resultado')}
+        </th>
+        <th class="px-2 py-2 w-8"></th>
+      `;
+      headersEl.innerHTML = hHTML;
+
+      // Rows
+      let rHTML = '';
+      d.table.rules.forEach((rule, rIdx) => {
+        rHTML += `<tr class="hover:bg-slate-50">`;
+        rHTML += `<td class="px-3 py-2 text-center text-slate-400 font-semibold">${rIdx + 1}</td>`;
+
+        // Celulas de Entrada
+        for (let i = 0; i < d.table.inputs.length; i++) {
+          const val = rule[i] || '-';
+          rHTML += `
+            <td class="px-2 py-1.5 border-r border-slate-200">
+              <input 
+                type="text" 
+                value="${escapeHtml(val)}" 
+                onchange="updateDTRuleCell(${rIdx}, ${i}, this.value)"
+                class="w-full bg-transparent font-mono text-xs border-b border-transparent hover:border-slate-300 focus:border-blue-500 outline-none px-1"
+              >
+            </td>
+          `;
+        }
+
+        // Celula de Saida
+        const outVal = rule[d.table.inputs.length] || '';
+        rHTML += `
+          <td class="px-2 py-1.5">
+            <input 
+              type="text" 
+              value="${escapeHtml(outVal)}" 
+              onchange="updateDTRuleCell(${rIdx}, ${d.table.inputs.length}, this.value)"
+              class="w-full font-bold text-emerald-700 bg-transparent text-xs border-b border-transparent hover:border-slate-300 focus:border-emerald-500 outline-none px-1"
+            >
+          </td>
+        `;
+
+        rHTML += `
+          <td class="px-1 py-1 text-center">
+            <button onclick="removeDTRow(${rIdx})" class="text-slate-300 hover:text-red-500 p-1" title="Remover Regra">
+              <i class="fas fa-minus-circle"></i>
+            </button>
+          </td>
+        `;
+
+        rHTML += `</tr>`;
+      });
+
+      rowsEl.innerHTML = rHTML;
+    }
+
+    function updateDTRuleCell(rIdx, colIdx, val) {
+      const d = decisions.find(x => x.id === activeEditingDTId);
+      if (d && d.table && d.table.rules[rIdx]) {
+        d.table.rules[rIdx][colIdx] = val;
+      }
+    }
+
+    function addDTRow() {
+      const d = decisions.find(x => x.id === activeEditingDTId);
+      if (!d || !d.table) return;
+
+      const newRow = new Array(d.table.inputs.length + 1).fill('-');
+      newRow[d.table.inputs.length] = 'Resultado';
+      d.table.rules.push(newRow);
+      renderDTTable();
+    }
+
+    function removeDTRow(rIdx) {
+      const d = decisions.find(x => x.id === activeEditingDTId);
+      if (d && d.table) {
+        d.table.rules.splice(rIdx, 1);
+        renderDTTable();
+      }
+    }
+
+    function saveDecisionTable() {
+      const d = decisions.find(x => x.id === activeEditingDTId);
+      if (d && d.table) {
+        d.table.hitPolicy = document.getElementById('dt-hit-policy').value;
+        saveDecisions();
+        showToast('Tabela de decisão guardada!');
+        closeDTModal();
+        renderDecisions();
+      }
+    }
+
+    // ========== SIMULADOR DMN ENGINE ==========
+    function initSimulatorTab() {
+      const select = document.getElementById('simulator-select');
+      if (!select) return;
+
+      select.innerHTML = '';
+      if (decisions.length === 0) {
+        select.innerHTML = `<option value="">Nenhuma decisão registada</option>`;
+        document.getElementById('simulator-body').innerHTML = '<p class="text-xs text-slate-400">Crie decisões no modelo primeiro.</p>';
+        return;
+      }
+
+      decisions.forEach(d => {
+        select.innerHTML += `<option value="${d.id}">${escapeHtml(d.name || 'Sem nome')}</option>`;
+      });
+
+      loadSimulatorForm();
+    }
+
+    function loadSimulatorForm() {
+      const id = document.getElementById('simulator-select').value;
+      const d = decisions.find(x => x.id === id);
+      const container = document.getElementById('simulator-body');
+
+      if (!d || !d.table) {
+        container.innerHTML = '<p class="text-xs text-slate-400">Esta decisão não tem tabela configurada.</p>';
+        return;
+      }
+
+      let inputsHTML = '';
+      d.table.inputs.forEach((inp, idx) => {
+        inputsHTML += `
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">${escapeHtml(inp)}:</label>
+            <input type="text" id="sim-input-${idx}" placeholder="Insira o valor" class="w-full text-xs border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 outline-none focus:ring-2 focus:ring-emerald-500">
+          </div>
+        `;
+      });
+
+      container.innerHTML = `
+        <div class="grid sm:grid-cols-2 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+          ${inputsHTML}
+        </div>
+
+        <button onclick="runSimulation('${d.id}')" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs py-2.5 rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+          <i class="fas fa-cogs"></i> Executar Lógica de Decisão
+        </button>
+
+        <div id="sim-result" class="hidden p-4 rounded-xl border"></div>
+      `;
+    }
+
+    function runSimulation(id) {
+      const d = decisions.find(x => x.id === id);
+      const resEl = document.getElementById('sim-result');
+      if (!d || !d.table) return;
+
+      const userInputs = [];
+      d.table.inputs.forEach((_, idx) => {
+        const val = document.getElementById(`sim-input-${idx}`).value.trim();
+        userInputs.push(val);
+      });
+
+      let matchedRule = null;
+      let matchedIdx = -1;
+
+      // Avaliador de regras FEEL básico
+      for (let r = 0; r < d.table.rules.length; r++) {
+        const rule = d.table.rules[r];
+        let ruleMatches = true;
+
+        for (let c = 0; c < d.table.inputs.length; c++) {
+          const cond = (rule[c] || '-').trim();
+          const val = userInputs[c];
+
+          if (cond === '-' || cond === '*') continue;
+
+          if (cond.startsWith('>=')) {
+            if (parseFloat(val) < parseFloat(cond.slice(2))) ruleMatches = false;
+          } else if (cond.startsWith('<=')) {
+            if (parseFloat(val) > parseFloat(cond.slice(2))) ruleMatches = false;
+          } else if (cond.startsWith('>')) {
+            if (parseFloat(val) <= parseFloat(cond.slice(1))) ruleMatches = false;
+          } else if (cond.startsWith('<')) {
+            if (parseFloat(val) >= parseFloat(cond.slice(1))) ruleMatches = false;
+          } else if (cond.toLowerCase() === 'true' || cond.toLowerCase() === 'false') {
+            if (val.toLowerCase() !== cond.toLowerCase()) ruleMatches = false;
+          } else {
+            if (val.toLowerCase() !== cond.toLowerCase()) ruleMatches = false;
+          }
+
+          if (!ruleMatches) break;
+        }
+
+        if (ruleMatches) {
+          matchedRule = rule;
+          matchedIdx = r;
+          break; // First Hit Policy
+        }
+      }
+
+      resEl.classList.remove('hidden');
+      if (matchedRule) {
+        const outputVal = matchedRule[d.table.inputs.length];
+        resEl.className = 'p-4 rounded-xl border bg-emerald-50 border-emerald-200 text-emerald-900';
+        resEl.innerHTML = `
+          <div class="text-xs uppercase font-bold tracking-wider text-emerald-600 mb-1">Resultado Encontrado (Regra #${matchedIdx + 1})</div>
+          <div class="text-lg font-bold text-emerald-800">${escapeHtml(outputVal)}</div>
+          <div class="text-xs text-emerald-700 mt-2">Correspondeu à regra: [${matchedRule.slice(0, d.table.inputs.length).join(', ')}]</div>
+        `;
+      } else {
+        resEl.className = 'p-4 rounded-xl border bg-amber-50 border-amber-200 text-amber-900';
+        resEl.innerHTML = `
+          <div class="text-xs uppercase font-bold tracking-wider text-amber-600 mb-1">Nenhuma Regra Válida</div>
+          <div class="text-sm font-semibold text-amber-800">Nenhuma condição foi satisfeita para os dados fornecidos.</div>
+        `;
+      }
+    }
+
+    // ========== GERADOR DE USER STORIES ==========
+    function generateStories() {
+      const output = document.getElementById('stories-output');
+      if (!output) return;
+
+      if (decisions.length === 0) {
+        output.innerHTML = `
+          <div class="text-center py-12 glass-card rounded-2xl border border-slate-200">
+            <i class="fas fa-exclamation-circle text-3xl text-amber-400 mb-2"></i>
+            <p class="text-sm font-semibold text-slate-700">Nenhuma decisão registada</p>
+            <p class="text-xs text-slate-400 mt-1">Crie o modelo primeiro para gerar as User Stories.</p>
+          </div>`;
+        return;
+      }
+
+      const roots = decisions.filter(d => !d.parentId);
+      const childrenOf = (parentId) => decisions.filter(d => d.parentId === parentId);
+
+      let html = '';
+
+      roots.forEach(root => {
+        const kids = childrenOf(root.id);
+
+        html += `
+          <div class="glass-card rounded-2xl overflow-hidden border border-slate-200 shadow-sm">
+            <div class="bg-gradient-to-r from-slate-800 to-indigo-900 text-white px-5 py-3 flex items-center justify-between">
+              <div>
+                <span class="text-[10px] font-bold uppercase tracking-wider bg-indigo-500/30 border border-indigo-400/30 text-indigo-200 px-2 py-0.5 rounded-full">
+                  ${kids.length > 0 ? 'Epic / Feature' : 'User Story'}
+                </span>
+                <h3 class="font-bold text-sm mt-1">${escapeHtml(root.name || 'Decisão sem nome')}</h3>
+              </div>
+              <button onclick="copyToClipboard(this)" data-text="${escapeHtml(root.name)}" class="text-xs bg-white/10 hover:bg-white/20 text-white px-2.5 py-1 rounded-lg transition" title="Copiar Nome">
+                <i class="fas fa-copy"></i>
+              </button>
+            </div>
+
+            <div class="p-4 space-y-3">
+              ${root.description ? `<p class="text-xs text-slate-600 italic">"${escapeHtml(root.description)}"</p>` : ''}
+
+              <!-- Format BDD Story -->
+              <div class="bg-slate-50 border border-slate-200/80 rounded-xl p-3 text-xs font-mono text-slate-800 leading-relaxed">
+                <strong class="text-blue-600">Como</strong> Sistema / Analista de Negócio,<br>
+                <strong class="text-blue-600">Quero</strong> executar a decisão "${escapeHtml(root.name)}",<br>
+                <strong class="text-blue-600">Para</strong> garantir o cumprimento automatizado das regras de negócio.
+              </div>
+
+              <!-- Acceptance Criteria -->
+              <div class="text-xs space-y-1.5">
+                <strong class="text-slate-700 font-semibold block">Critérios de Aceitação (Gherkin):</strong>
+                <div class="bg-blue-50/60 border border-blue-100 rounded-xl p-3 text-xs text-slate-700 space-y-1 font-mono">
+                  <div><strong class="text-indigo-600">Dado</strong> que os inputs [${escapeHtml(root.inputs || 'Dados de entrada')}] estão disponíveis</div>
+                  <div><strong class="text-indigo-600">Quando</strong> a tabela de decisão for avaliada</div>
+                  <div><strong class="text-indigo-600">Então</strong> o resultado deve estar em conformidade com as regras testadas.</div>
+                </div>
+              </div>
+
+              ${kids.length > 0 ? `
+                <div class="pt-2">
+                  <span class="text-xs font-bold text-slate-600 uppercase tracking-wider block mb-2">Sub-stories filhas dependentes:</span>
+                  <div class="space-y-2">
+                    ${kids.map(child => `
+                      <div class="border-l-2 border-indigo-500 pl-3 py-1">
+                        <div class="font-bold text-xs text-slate-800">${escapeHtml(child.name || 'Sem nome')}</div>
+                        <div class="text-[11px] text-slate-500 mt-0.5 font-mono">
+                          Como serviço, quero processar "${escapeHtml(child.name)}" para alimentar a decisão principal "${escapeHtml(root.name)}".
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+        `;
+      });
+
+      output.innerHTML = html;
+    }
+
+    function exportJiraCSV() {
+      let csvContent = "data:text/csv;charset=utf-8,Issue Type,Summary,Description\n";
+      
+      decisions.forEach(d => {
+        const type = d.parentId ? "Story" : "Epic";
+        const summary = `"${(d.name || 'Decisão').replace(/"/g, '""')}"`;
+        const desc = `"Como sistema quero executar ${summary} com base em ${d.inputs || 'inputs'}"`;
+        csvContent += `${type},${summary},${desc}\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "dmn_backlog_jira.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      showToast('CSV para Jira gerado com sucesso!');
+    }
+
+    // ========== CHECKLIST SCRUM ==========
+    const checklistData = {
+      refinement: {
+        title: 'Backlog Refinement',
+        icon: 'fa-sync-alt',
+        items: [
+          'Modelo Esquelético (DRD) criado e validado com o PO',
+          'Decisões complexas divididas em sub-decisões menores',
+          'Atributos de Entrada (Inputs) identificados com a equipa técnica',
+          'Critérios de aceitação escritos no formato Dado/Quando/Então'
+        ]
+      },
+      planning: {
+        title: 'Sprint Planning',
+        icon: 'fa-calendar-check',
+        items: [
+          'Histórias selecionadas respeitam a ordem de dependência do DRD',
+          'DoD (Definition of Done) exige testes unitários para a Tabela de Decisão',
+          'Membros da equipa entendem as regras de negócio de cada nó'
+        ]
+      },
+      review: {
+        title: 'Sprint Review',
+        icon: 'fa-eye',
+        items: [
+          'Demonstrado o funcionamento da Tabela de Decisão com cenários reais',
+          'Especialista de Negócio validou as regras executadas',
+          'Feedback sobre exceções de regras registado no Backlog'
+        ]
+      }
+    };
+
+    function renderChecklists() {
+      const container = document.getElementById('checklists-container');
+      if (!container) return;
+
+      let html = '';
+
+      Object.keys(checklistData).forEach(key => {
+        const data = checklistData[key];
+        if (!checklists[key]) checklists[key] = {};
+
+        const total = data.items.length;
+        let checkedCount = 0;
+
+        let itemsHtml = '';
+        data.items.forEach((item, idx) => {
+          const checked = checklists[key][idx] || false;
+          if (checked) checkedCount++;
+
+          itemsHtml += `
+            <label class="flex items-start gap-3 py-2 border-b border-slate-100 last:border-0 cursor-pointer select-none">
+              <input 
+                type="checkbox" 
+                ${checked ? 'checked' : ''} 
+                onchange="toggleChecklist('${key}', ${idx}, this.checked)"
+                class="mt-0.5 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+              >
+              <span class="text-xs ${checked ? 'line-through text-slate-400' : 'text-slate-700'}">${escapeHtml(item)}</span>
+            </label>
+          `;
+        });
+
+        const pct = Math.round((checkedCount / total) * 100);
+
+        html += `
+          <div class="glass-card rounded-2xl overflow-hidden border border-slate-200">
+            <div class="bg-slate-50 px-4 py-3 border-b border-slate-200 flex items-center justify-between">
+              <div class="flex items-center gap-2 font-bold text-xs text-slate-800">
+                <i class="fas ${data.icon} text-blue-600"></i>
+                ${data.title}
+              </div>
+              <span class="text-[11px] font-bold text-blue-600 bg-blue-50 border border-blue-100 px-2 py-0.5 rounded-full">${pct}%</span>
+            </div>
+            <div class="p-4">
+              <div class="w-full bg-slate-100 rounded-full h-1.5 mb-3 overflow-hidden">
+                <div class="bg-blue-600 h-1.5 rounded-full transition-all duration-300" style="width: ${pct}%"></div>
+              </div>
+              ${itemsHtml}
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    function toggleChecklist(section, idx, checked) {
+      if (!checklists[section]) checklists[section] = {};
+      checklists[section][idx] = checked;
+      localStorage.setItem('dmn-checklists-v4', JSON.stringify(checklists));
+      renderChecklists();
+    }
+
+    function resetChecklist() {
+      checklists = {};
+      localStorage.removeItem('dmn-checklists-v4');
+      renderChecklists();
+      showToast('Checklist repostos');
+    }
+
+    // ========== PRESETS E BACKUP JSON ==========
+    function openPresetModal() {
+      document.getElementById('preset-modal').classList.remove('hidden');
+    }
+
+    function closePresetModal() {
+      document.getElementById('preset-modal').classList.add('hidden');
+    }
+
+    function loadPreset(key) {
+      if (PRESETS[key]) {
+        decisions = JSON.parse(JSON.stringify(PRESETS[key]));
+        saveDecisions();
+        closePresetModal();
+        renderDecisions();
+        showToast('Modelo de exemplo carregado!');
+      }
+    }
+
+    function openDataModal() {
+      document.getElementById('data-modal').classList.remove('hidden');
+    }
+
+    function closeDataModal() {
+      document.getElementById('data-modal').classList.add('hidden');
+    }
+
+    function exportJSON() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(decisions, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `dmn_scrum_backup.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast('Cópia de segurança descarregada!');
+    }
+
+    function importJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const imported = JSON.parse(e.target.result);
+          if (Array.isArray(imported)) {
+            decisions = imported;
+            saveDecisions();
+            closeDataModal();
+            renderDecisions();
+            showToast('Dados importados com sucesso!');
+          }
+        } catch (err) {
+          showToast('Erro ao importar JSON', 'fa-exclamation-triangle text-amber-400');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function clearAllData() {
+      if (confirm('Tem a certeza de que deseja eliminar todas as decisões?')) {
+        decisions = [];
+        saveDecisions();
+        closeDataModal();
+        renderDecisions();
+        showToast('Dados eliminados', 'fa-trash-alt text-red-400');
+      }
+    }
+
+    // ========== HELPER COPY TO CLIPBOARD ==========
+    function copyToClipboard(btn) {
+      const text = btn.getAttribute('data-text') || '';
+      const dummy = document.createElement("textarea");
+      document.body.appendChild(dummy);
+      dummy.value = text;
+      dummy.select();
+      document.execCommand("copy");
+      document.body.removeChild(dummy);
+
+      showToast('Copiado para a área de transferência!');
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ========== INICIALIZAÇÃO ==========
+    document.addEventListener('DOMContentLoaded', function() {
+      showTab('mapeamento');
+    });
+  </script>
+</body>
+</html>
+
