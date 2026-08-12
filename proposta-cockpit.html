@@ -1,0 +1,1403 @@
+<!DOCTYPE html>
+<html lang="pt-PT" class="h-full bg-slate-950 text-slate-100">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NaEsquina — Audit & Remediation Cockpit</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+    
+    * {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    /* Barra de deslocamento personalizada */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    .tab-btn.active {
+      background-color: #2563eb;
+      color: #ffffff;
+      box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.39);
+    }
+
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .glass-card-hover:hover {
+      border-color: rgba(59, 130, 246, 0.4);
+      transform: translateY(-2px);
+      transition: all 0.2s ease-in-out;
+    }
+  </style>
+</head>
+<body class="min-h-full flex flex-col bg-slate-950 text-slate-100">
+
+  <!-- Cabeçalho Executivo -->
+  <header class="border-b border-slate-800 bg-slate-900/80 sticky top-0 z-40 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        
+        <!-- Logótipo e Título -->
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-lg shadow-blue-500/20 font-bold text-lg">
+            <i class="fas fa-microchip"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2">
+              <h1 class="text-lg font-bold text-white tracking-tight">NaEsquina <span class="text-slate-400 font-normal">| Audit & Proposals</span></h1>
+              <span class="bg-red-500/10 border border-red-500/30 text-red-400 text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse"></span>
+                Ajustes Necessários
+              </span>
+            </div>
+            <p class="text-xs text-slate-400">Análise Crítica: Proposta de Assessment e Blueprint Cockpit AI-First</p>
+          </div>
+        </div>
+
+        <!-- Ações do Cabeçalho & Estado de Partilha -->
+        <div class="flex flex-wrap items-center gap-3">
+          <!-- Indicador de Sincronização -->
+          <div id="cloud-status-badge" class="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-xs text-slate-300">
+            <span id="cloud-status-dot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span id="cloud-status-text">Local</span>
+          </div>
+
+          <!-- Botão de Partilha Principal -->
+          <button onclick="openShareModal()" class="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-blue-500/20 active:scale-95 transition flex items-center gap-2">
+            <i class="fas fa-share-alt"></i>
+            <span>Partilhar Cockpit</span>
+          </button>
+        </div>
+
+      </div>
+
+      <!-- Navegação por Abas -->
+      <nav class="flex space-x-2 mt-4 overflow-x-auto pb-1 no-scrollbar border-t border-slate-800/80 pt-3">
+        <button onclick="switchTab('dashboard')" class="tab-btn active px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-2 text-slate-300 hover:text-white" data-tab="dashboard">
+          <i class="fas fa-chart-pie"></i> Diagnóstico Geral
+        </button>
+        <button onclick="switchTab('fortes')" class="tab-btn px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-2 text-slate-300 hover:text-white" data-tab="fortes">
+          <i class="fas fa-shield-alt text-emerald-400"></i> Pontos Fortes (8)
+        </button>
+        <button onclick="switchTab('riscos')" class="tab-btn px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-2 text-slate-300 hover:text-white" data-tab="riscos">
+          <i class="fas fa-exclamation-triangle text-amber-400"></i> Riscos & Falhas
+        </button>
+        <button onclick="switchTab('simulador')" class="tab-btn px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-2 text-slate-300 hover:text-white" data-tab="simulador">
+          <i class="fas fa-calculator text-blue-400"></i> Calculadora & Simulador
+        </button>
+        <button onclick="switchTab('checklist')" class="tab-btn px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-2 text-slate-300 hover:text-white" data-tab="checklist">
+          <i class="fas fa-check-double text-indigo-400"></i> Checklist de Remediação
+        </button>
+        <button onclick="switchTab('top10')" class="tab-btn px-3.5 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-2 text-slate-300 hover:text-white" data-tab="top10">
+          <i class="fas fa-list-ol text-purple-400"></i> Top 10 Ações
+        </button>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Conteúdo Principal -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <!-- 1. DASHBOARD & DIAGNÓSTICO GERAL -->
+    <section id="dashboard" class="tab-content space-y-6">
+      
+      <!-- Banner de Alerta do Veredicto -->
+      <div class="relative overflow-hidden rounded-2xl bg-gradient-to-r from-red-950/80 via-slate-900 to-amber-950/60 p-6 border border-red-500/30 shadow-2xl">
+        <div class="absolute -right-10 -bottom-10 w-60 h-60 bg-red-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
+          <div class="space-y-2 max-w-2xl">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-500/20 text-red-300 border border-red-500/30 text-xs font-bold uppercase tracking-wider">
+              <i class="fas fa-ban"></i> Veredicto: NÃO ENVIAR AINDA
+            </div>
+            <h2 class="text-xl sm:text-2xl font-bold text-white tracking-tight">Proposta técnica robusta, mas comercialmente vulnerável</h2>
+            <p class="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              O corpo técnico é excelente (segurança, DRD e limites de escopo estão no topo do mercado), porém faltam elementos vitais: <strong class="text-white">Preço definido</strong>, <strong class="text-white">Apresentação da NaEsquina</strong>, <strong class="text-white">Blindagem jurídica/LGPD</strong> e um <strong class="text-white">cronograma exequível</strong> para 1 pessoa solo.
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <button onclick="switchTab('checklist')" class="shrink-0 bg-red-600 hover:bg-red-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-lg shadow-red-600/30 transition flex items-center gap-2">
+              <i class="fas fa-wrench"></i> Resolver Bloqueadores
+            </button>
+            <button onclick="openShareModal()" class="shrink-0 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs px-4 py-2.5 rounded-xl border border-slate-700 transition flex items-center gap-2">
+              <i class="fas fa-share-alt text-blue-400"></i> Partilhar
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cards de Métricas Principais -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Bloqueadores -->
+        <div class="glass-card rounded-2xl p-5 border border-slate-800">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase text-slate-400 tracking-wider">Bloqueadores Críticos</span>
+            <div class="w-8 h-8 rounded-lg bg-red-500/10 text-red-400 flex items-center justify-center font-bold text-sm">
+              4
+            </div>
+          </div>
+          <div class="text-2xl font-extrabold text-white">4 Erros Graves</div>
+          <p class="text-xs text-slate-400 mt-1">Preço zerado, sem credibilidade, contrato omisso e escopo irreal.</p>
+        </div>
+
+        <!-- Horas Estimadas -->
+        <div class="glass-card rounded-2xl p-5 border border-slate-800">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase text-slate-400 tracking-wider">Estimativa de Esforço</span>
+            <div class="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-sm">
+              <i class="far fa-clock"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-extrabold text-white">185h – 290h</div>
+          <p class="text-xs text-blue-300 mt-1">Ponto médio: <strong>~240 horas reais</strong> de trabalho focado.</p>
+        </div>
+
+        <!-- Carga Horária / Dia -->
+        <div class="glass-card rounded-2xl p-5 border border-slate-800">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase text-slate-400 tracking-wider">Carga Diária (4 sem)</span>
+            <div class="w-8 h-8 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center font-bold text-sm">
+              <i class="fas fa-fire"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-extrabold text-amber-400">12,0 h / dia</div>
+          <p class="text-xs text-slate-400 mt-1">Inviável solo em 20 dias úteis. Recomenda-se ajustar para 5-6 sem.</p>
+        </div>
+
+        <!-- Faixa Recomendada -->
+        <div class="glass-card rounded-2xl p-5 border border-slate-800">
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold uppercase text-slate-400 tracking-wider">Preço Recomendado</span>
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold text-sm">
+              <i class="fas fa-coins"></i>
+            </div>
+          </div>
+          <div class="text-2xl font-extrabold text-emerald-400">R$ 42k – 48k</div>
+          <p class="text-xs text-slate-400 mt-1">Sugestão: <strong>R$ 45.000</strong> (Taxa efetiva ~R$ 180-200/h).</p>
+        </div>
+      </div>
+
+      <!-- Gráficos e Distribuição -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Gráfico de Esforço por Atividade -->
+        <div class="glass-card rounded-2xl p-5 lg:col-span-2 border border-slate-800 flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="font-bold text-sm text-white flex items-center gap-2">
+                <i class="fas fa-chart-bar text-blue-400"></i> Distribuição Estimada do Esforço (Horas Reais)
+              </h3>
+              <p class="text-xs text-slate-400">Mapeamento de processos e documentação consomem a maior parte das horas</p>
+            </div>
+            <span class="text-xs bg-slate-800 text-slate-300 font-semibold px-2.5 py-1 rounded-lg border border-slate-700">Total: ~240h</span>
+          </div>
+          <div class="relative h-64 w-full">
+            <canvas id="effortChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Resumo dos 4 Bloqueadores Fatais -->
+        <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-4">
+          <h3 class="font-bold text-sm text-white flex items-center gap-2 border-b border-slate-800 pb-3">
+            <i class="fas fa-exclamation-circle text-red-400"></i> Os 4 Bloqueadores Fatais
+          </h3>
+
+          <div class="space-y-3 text-xs">
+            <div class="p-3 rounded-xl bg-red-950/30 border border-red-500/20 space-y-1">
+              <div class="font-bold text-red-300 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> 1. Preço ausente (R$ [VALOR])
+              </div>
+              <p class="text-slate-400 leading-normal">Enviar sem valor entrega o controlo da precificação ao cliente e desvaloriza a consultoria.</p>
+            </div>
+
+            <div class="p-3 rounded-xl bg-red-950/30 border border-red-500/20 space-y-1">
+              <div class="font-bold text-red-300 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> 2. Sem apresentação da NaEsquina
+              </div>
+              <p class="text-slate-400 leading-normal">A secção 1 não vende a empresa, nem o histórico do Ivan como Eng.º Sénior.</p>
+            </div>
+
+            <div class="p-3 rounded-xl bg-red-950/30 border border-red-500/20 space-y-1">
+              <div class="font-bold text-red-300 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> 3. Contrato juridicamente omisso
+              </div>
+              <p class="text-slate-400 leading-normal">Faltam regras de mora, rescisão, foro, LGPD, retenção e janelas de aceite.</p>
+            </div>
+
+            <div class="p-3 rounded-xl bg-red-950/30 border border-red-500/20 space-y-1">
+              <div class="font-bold text-red-300 flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> 4. Sobrecarga de prazo (4 sem)
+              </div>
+              <p class="text-slate-400 leading-normal">185h–290h exigiriam até 14h/dia de trabalho solo sem margem de erro.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- 2. PONTOS FORTES -->
+    <section id="fortes" class="tab-content space-y-4 hidden">
+      <div class="glass-card rounded-2xl p-5 border border-slate-800">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center font-bold">
+            <i class="fas fa-shield-alt text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-white">8 Ativos Comerciais da Proposta (O que está excelente)</h2>
+            <p class="text-xs text-slate-400">Elementos diferenciadores que colocam o documento acima da média de mercado</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        
+        <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-2 glass-card-hover">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">01. Enquadramento Conceitual</span>
+            <i class="fas fa-brain text-slate-600"></i>
+          </div>
+          <h3 class="font-bold text-sm text-white">Ciclo de Decisão Claro & Consultivo</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            A definição do cockpit (<em>Observar → Interpretar → Recomendar → Agir com controlo</em>) é memorável. Recomendar um MVP "predominantemente consultivo e de leitura" reduz o receio do cliente.
+          </p>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-2 glass-card-hover">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">02. Segurança Determinística</span>
+            <i class="fas fa-lock text-slate-600"></i>
+          </div>
+          <h3 class="font-bold text-sm text-white">21 Controles de Segurança & Governança</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            A afirmação de que <em>"Agentes não serão a única barreira de proteção"</em> demonstra maturidade técnica avançada que separa a NaEsquina de 95% das consultorias concorrentes.
+          </p>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-2 glass-card-hover">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">03. Limites de Escopo Explicitados</span>
+            <i class="fas fa-ruler-combined text-slate-600"></i>
+          </div>
+          <h3 class="font-bold text-sm text-white">Tetos de Trabalho (Caps Objetivos)</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Regras explícitas: "Até 9 processos", "até 10 entrevistas", "até 3 workshops", "1 rodada de revisão" e wireframes de média fidelidade. Protege eficazmente contra <em>scope creep</em>.
+          </p>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-2 glass-card-hover">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">04. Fora de Escopo Detalhado</span>
+            <i class="fas fa-ban text-slate-600"></i>
+          </div>
+          <h3 class="font-bold text-sm text-white">18 Itens Excluídos com Clareza</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Exclusões explícitas para "execução autónoma de ações financeiras", "alterações automáticas em campanhas" e "parecer formal LGPD". Evita 90% das ambiguidades pós-venda.
+          </p>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-2 glass-card-hover">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">05. Estrutura de Pagamento</span>
+            <i class="fas fa-file-invoice-dollar text-slate-600"></i>
+          </div>
+          <h3 class="font-bold text-sm text-white">Marcos Vinculados a Milestones (40/30/30)</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Estrutura superior ao pagamento único no final, criando pontos formais de validação ao longo do projeto.
+          </p>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-2 glass-card-hover">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">06. Ferramenta de Venda Visual</span>
+            <i class="fas fa-project-diagram text-slate-600"></i>
+          </div>
+          <h3 class="font-bold text-sm text-white">Anexo A (Visão do Cockpit Executivo)</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Mostrar perguntas do assistente, briefing diário e visões por área materializa a entrega e vende o MVP antes mesmo de ser formalmente contratado.
+          </p>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-2 glass-card-hover">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">07. Gestão de Expectativas</span>
+            <i class="fas fa-handshake text-slate-600"></i>
+          </div>
+          <h3 class="font-bold text-sm text-white">Premissas de Acesso Honestas</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            Deixa claro que disponibilidade de APIs, permissões e qualidade de dados das ferramentas (Pipedrive, Conta Azul, Google Ads) serão confirmadas no assessment.
+          </p>
+        </div>
+
+        <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-2 glass-card-hover">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">08. Proteção Comercial</span>
+            <i class="fas fa-shield-virus text-slate-600"></i>
+          </div>
+          <h3 class="font-bold text-sm text-white">Trava Comercial na Estimativa do MVP</h3>
+          <p class="text-xs text-slate-300 leading-relaxed">
+            A cláusula afirmando que <em>"a estimativa de prazo do MVP não constitui compromisso antes do término do assessment"</em> é um hedge fundamental.
+          </p>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 3. RISCOS E FALHAS -->
+    <section id="riscos" class="tab-content space-y-4 hidden">
+      <div class="glass-card rounded-2xl p-5 border border-slate-800 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-base font-bold text-white">Matriz de Riscos & Vulnerabilidades</h2>
+          <p class="text-xs text-slate-400">Falhas identificadas organizadas por categoria com nível de impacto</p>
+        </div>
+        
+        <!-- Filtros de Categoria -->
+        <div class="flex flex-wrap gap-1.5 text-xs">
+          <button onclick="filterRisks('all')" class="risk-filter active px-3 py-1.5 rounded-lg bg-blue-600 text-white font-medium transition" data-risk-cat="all">Todos</button>
+          <button onclick="filterRisks('comercial')" class="risk-filter px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 font-medium hover:bg-slate-700 transition" data-risk-cat="comercial">Comerciais (C1-C8)</button>
+          <button onclick="filterRisks('escopo')" class="risk-filter px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 font-medium hover:bg-slate-700 transition" data-risk-cat="escopo">Escopo</button>
+          <button onclick="filterRisks('juridico')" class="risk-filter px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 font-medium hover:bg-slate-700 transition" data-risk-cat="juridico">Jurídico/LGPD</button>
+          <button onclick="filterRisks('execucao')" class="risk-filter px-3 py-1.5 rounded-lg bg-slate-800 text-slate-300 font-medium hover:bg-slate-700 transition" data-risk-cat="execucao">Execução</button>
+        </div>
+      </div>
+
+      <div class="space-y-3" id="risks-container">
+        <!-- Injetado por JS -->
+      </div>
+    </section>
+
+    <!-- 4. SIMULADOR E CALCULADORA -->
+    <section id="simulador" class="tab-content space-y-6 hidden">
+      
+      <div class="glass-card rounded-2xl p-5 border border-slate-800">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-9 h-9 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold">
+            <i class="fas fa-calculator text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-white">Simulador Interativo de Esforço & Precificação</h2>
+            <p class="text-xs text-slate-400">Ajuste os parâmetros do projeto para recalcular horas reais, carga diária e preço recomendado</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Formulário de Parâmetros -->
+        <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-4">
+          <h3 class="font-bold text-sm text-white border-b border-slate-800 pb-2">Parâmetros do Escopo</h3>
+
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <label class="font-semibold text-slate-300">N.º de Processos a Mapear:</label>
+              <span id="val-proc" class="font-bold text-blue-400">9 processos</span>
+            </div>
+            <input type="range" id="input-proc" min="3" max="15" value="9" oninput="updateCalculator()" class="w-full accent-blue-500">
+            <span class="text-[10px] text-slate-500">Cada processo exige ~5,5h de documentação (15 campos)</span>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <label class="font-semibold text-slate-300">N.º de Entrevistas:</label>
+              <span id="val-ent" class="font-bold text-blue-400">10 entrevistas</span>
+            </div>
+            <input type="range" id="input-ent" min="4" max="20" value="10" oninput="updateCalculator()" class="w-full accent-blue-500">
+            <span class="text-[10px] text-slate-500">1h de entrevista + 1h de síntese e notas</span>
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <label class="font-semibold text-slate-300">N.º de Workshops:</label>
+              <span id="val-work" class="font-bold text-blue-400">3 workshops</span>
+            </div>
+            <input type="range" id="input-work" min="1" max="6" value="3" oninput="updateCalculator()" class="w-full accent-blue-500">
+            <span class="text-[10px] text-slate-500">2h execução + 2h preparação + 1h síntese</span>
+          </div>
+
+          <div class="border-t border-slate-800 pt-3">
+            <div class="flex justify-between text-xs mb-1">
+              <label class="font-semibold text-slate-300">Duração do Projeto (Semanas):</label>
+              <span id="val-weeks" class="font-bold text-indigo-400">4 semanas</span>
+            </div>
+            <input type="range" id="input-weeks" min="3" max="8" value="4" oninput="updateCalculator()" class="w-full accent-indigo-500">
+          </div>
+
+          <div>
+            <div class="flex justify-between text-xs mb-1">
+              <label class="font-semibold text-slate-300">Taxa Horária Pretendida (R$/h):</label>
+              <span id="val-rate" class="font-bold text-emerald-400">R$ 185 / h</span>
+            </div>
+            <input type="range" id="input-rate" min="120" max="300" step="5" value="185" oninput="updateCalculator()" class="w-full accent-emerald-500">
+          </div>
+        </div>
+
+        <!-- Resultados da Simulação -->
+        <div class="glass-card rounded-2xl p-5 border border-slate-800 lg:col-span-2 space-y-6 flex flex-col justify-between">
+          
+          <div>
+            <h3 class="font-bold text-sm text-white border-b border-slate-800 pb-3 mb-4">Métricas do Projeto Calculadas</h3>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+              <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Horas Totais</span>
+                <span id="calc-total-hours" class="text-3xl font-black text-blue-400 mt-1 block">240 h</span>
+                <span class="text-[10px] text-slate-500">Inclui gestão e revisões</span>
+              </div>
+
+              <div id="card-daily-hours" class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Carga Diária</span>
+                <span id="calc-daily-hours" class="text-3xl font-black text-amber-400 mt-1 block">12.0 h/d</span>
+                <span id="calc-daily-status" class="text-[10px] text-amber-400 font-semibold">⚠️ Sobrecarga alta</span>
+              </div>
+
+              <div class="bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-center">
+                <span class="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">Valor Sugerido</span>
+                <span id="calc-total-price" class="text-3xl font-black text-emerald-400 mt-1 block">R$ 44.400</span>
+                <span class="text-[10px] text-slate-500">Preço cheio do Assessment</span>
+              </div>
+            </div>
+
+            <!-- Divisão de Pagamento por Marcos -->
+            <div class="bg-slate-900/50 p-4 rounded-xl border border-slate-800 space-y-3">
+              <div class="text-xs font-bold text-slate-300 uppercase tracking-wider">Sugestão de Pagamento por Marcos (40 / 40 / 20)</div>
+              <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                <div class="p-2 rounded-lg bg-slate-800/80">
+                  <span class="text-slate-400 block text-[10px]">Kickoff (40%)</span>
+                  <strong id="m-1" class="text-white font-bold">R$ 17.760</strong>
+                </div>
+                <div class="p-2 rounded-lg bg-slate-800/80">
+                  <span class="text-slate-400 block text-[10px]">M2 - Mapeamento (40%)</span>
+                  <strong id="m-2" class="text-white font-bold">R$ 17.760</strong>
+                </div>
+                <div class="p-2 rounded-lg bg-slate-800/80">
+                  <span class="text-slate-400 block text-[10px]">Entrega Final (20%)</span>
+                  <strong id="m-3" class="text-white font-bold">R$ 8.880</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tabela de Referência do Mercado -->
+          <div class="border-t border-slate-800 pt-4">
+            <span class="text-xs font-bold text-slate-400 uppercase tracking-wider block mb-2">Cenários de Precificação (Mercado BR 2026)</span>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+              <div class="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                <span class="text-slate-400 text-[10px] block">Piso Mínimo</span>
+                <span class="font-bold text-slate-200">R$ 140/h</span>
+                <span id="tier-piso" class="text-[10px] text-slate-500 block">R$ 33.600</span>
+              </div>
+              <div class="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                <span class="text-slate-400 text-[10px] block">Competitivo</span>
+                <span class="font-bold text-slate-200">R$ 160/h</span>
+                <span id="tier-comp" class="text-[10px] text-slate-500 block">R$ 38.400</span>
+              </div>
+              <div class="p-2 rounded-lg bg-blue-950/40 border border-blue-500/30">
+                <span class="text-blue-300 text-[10px] block">Recomendado</span>
+                <span class="font-bold text-blue-400">R$ 180-200/h</span>
+                <span id="tier-recom" class="text-[10px] text-blue-300 font-semibold block">R$ 43k - 48k</span>
+              </div>
+              <div class="p-2 rounded-lg bg-slate-900 border border-slate-800">
+                <span class="text-slate-400 text-[10px] block">Premium</span>
+                <span class="font-bold text-slate-200">R$ 220-250/h</span>
+                <span id="tier-prem" class="text-[10px] text-slate-500 block">R$ 52k - 60k</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- 5. CHECKLIST DE REMEDIAÇÃO -->
+    <section id="checklist" class="tab-content space-y-6 hidden">
+      
+      <div class="glass-card rounded-2xl p-5 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-base font-bold text-white">Checklist de Ajustes Antes do Envio</h2>
+          <p class="text-xs text-slate-400">Marque os itens conforme for corrigindo o documento original</p>
+        </div>
+
+        <!-- Progresso Geral -->
+        <div class="flex items-center gap-3 w-full sm:w-auto bg-slate-900 p-3 rounded-xl border border-slate-800">
+          <div class="text-right">
+            <span class="text-[10px] font-bold uppercase text-slate-400 block">Progresso</span>
+            <span id="checklist-progress-text" class="text-base font-black text-blue-400">0 / 18</span>
+          </div>
+          <div class="w-24 bg-slate-800 rounded-full h-2.5 overflow-hidden">
+            <div id="checklist-progress-bar" class="bg-blue-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-6">
+        
+        <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-3">
+          <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+            <span class="w-3 h-3 rounded-full bg-red-500"></span>
+            <h3 class="font-bold text-sm text-white">Ajustes Críticos (Bloqueadores de Envio)</h3>
+          </div>
+
+          <div class="space-y-2 text-xs" id="checklist-criticos">
+            <!-- Injetado via JS -->
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-3">
+          <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+            <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+            <h3 class="font-bold text-sm text-white">Ajustes Importantes (Estruturais & Proteção)</h3>
+          </div>
+
+          <div class="space-y-2 text-xs" id="checklist-importantes">
+            <!-- Injetado via JS -->
+          </div>
+        </div>
+
+        <div class="glass-card rounded-2xl p-5 border border-slate-800 space-y-3">
+          <div class="flex items-center gap-2 border-b border-slate-800 pb-3">
+            <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+            <h3 class="font-bold text-sm text-white">Diferenciais Opcionais (Aumentam a Conversão)</h3>
+          </div>
+
+          <div class="space-y-2 text-xs" id="checklist-opcionais">
+            <!-- Injetado via JS -->
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- 6. TOP 10 AÇÕES -->
+    <section id="top10" class="tab-content space-y-4 hidden">
+      <div class="glass-card rounded-2xl p-5 border border-slate-800">
+        <div class="flex items-center gap-3 mb-2">
+          <div class="w-9 h-9 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center font-bold">
+            <i class="fas fa-list-ol text-lg"></i>
+          </div>
+          <div>
+            <h2 class="text-base font-bold text-white">Top 10 Ações Priorizadas (Plano de Ação)</h2>
+            <p class="text-xs text-slate-400">Roteiro passo a passo ordenado por prioridade de execução</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-3" id="top10-container">
+        <!-- Injetado via JS -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- MODAL DE PARTILHA & SINCRONIZAÇÃO -->
+  <div id="share-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 space-y-5 shadow-2xl relative overflow-hidden">
+      
+      <div class="flex items-center justify-between border-b border-slate-800 pb-4">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-500/10 text-blue-400 flex items-center justify-center font-bold text-lg">
+            <i class="fas fa-share-alt"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-white">Partilhar Cockpit de Análise</h3>
+            <p class="text-xs text-slate-400">Sincronize as simulações e o checklist com a equipa</p>
+          </div>
+        </div>
+        <button onclick="closeShareModal()" class="text-slate-400 hover:text-white p-2 transition">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+
+      <!-- Opção 1: Link Directo com Estado -->
+      <div class="space-y-2">
+        <label class="block text-xs font-bold uppercase tracking-wider text-slate-300">Link Direto de Acesso (Sincronizado)</label>
+        <div class="flex items-center gap-2">
+          <input type="text" id="share-url-input" readonly class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2.5 text-xs text-slate-300 font-mono outline-none focus:border-blue-500">
+          <button onclick="copyShareUrl()" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold text-xs px-4 py-2.5 rounded-xl transition shrink-0 flex items-center gap-1.5">
+            <i class="fas fa-copy"></i> Copiar
+          </button>
+        </div>
+        <p class="text-[11px] text-slate-500">Qualquer pessoa com este link acede à versão com as suas métricas e checklist sincronizados.</p>
+      </div>
+
+      <!-- Opção 2: Exportar Resumo Formatado -->
+      <div class="space-y-2 border-t border-slate-800 pt-4">
+        <label class="block text-xs font-bold uppercase tracking-wider text-slate-300">Exportar Resumo Executivo para Mensagem</label>
+        <div class="bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-400 font-mono space-y-1 max-h-32 overflow-y-auto leading-relaxed">
+          <p>📌 <strong>Cockpit NaEsquina — Análise da Proposta Assessment</strong></p>
+          <p>• Veredicto: NÃO ENVIAR (4 Bloqueadores Fatais)</p>
+          <p>• Preço Recomendado: R$ 45.000 (~240h reais)</p>
+          <p>• Prazo Exequível: 5-6 semanas (ou reduzir escopo)</p>
+          <p>• Ações prioritárias: Preço fixo, Apresentação, LGPD e Janelas de Aceite.</p>
+        </div>
+        <div class="flex gap-2">
+          <button onclick="copyExecutiveSummary()" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs py-2.5 rounded-xl transition border border-slate-700 flex items-center justify-center gap-2">
+            <i class="fas fa-file-alt text-indigo-400"></i> Copiar Texto Resumo
+          </button>
+          <button onclick="shareViaNative()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs py-2.5 rounded-xl transition flex items-center justify-center gap-2">
+            <i class="fas fa-paper-plane"></i> Partilhar no Canal
+          </button>
+        </div>
+      </div>
+
+      <div class="text-center pt-2">
+        <button onclick="closeShareModal()" class="text-xs text-slate-500 hover:text-slate-300 font-medium transition">Fechar Janela</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast de Notificação -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 bg-slate-900 border border-slate-800 text-white text-xs font-medium px-4 py-3 rounded-2xl shadow-2xl flex items-center gap-3 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div id="toast-icon-bg" class="w-7 h-7 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold">
+      <i id="toast-icon" class="fas fa-check"></i>
+    </div>
+    <span id="toast-message">Operação concluída com sucesso!</span>
+  </div>
+
+  <!-- Scripts Módulos de Estado & Firebase Cloud Share -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js';
+    import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js';
+    import { getFirestore, doc, setDoc, getDoc, collection, onSnapshot } from 'https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js';
+
+    // Variáveis Globais de Ambiente
+    const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'naesquina-audit-app';
+    const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+    let db = null;
+    let auth = null;
+    let currentUser = null;
+    let currentShareId = null;
+
+    // Inicialização da Nuvem
+    async function initCloudSync() {
+      if (!firebaseConfig) {
+        updateCloudStatus('Local Storage', 'bg-amber-400');
+        return;
+      }
+
+      try {
+        const app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+
+        // Autenticação prévia obrigatória
+        if (initialAuthToken) {
+          await signInWithCustomToken(auth, initialAuthToken);
+        } else {
+          await signInAnonymously(auth);
+        }
+
+        onAuthStateChanged(auth, (user) => {
+          currentUser = user;
+          if (user) {
+            updateCloudStatus('Nuvem Ativa', 'bg-emerald-400');
+            checkUrlForSharedData();
+          }
+        });
+      } catch (err) {
+        console.warn('Fallback para modo local:', err);
+        updateCloudStatus('Modo Offline', 'bg-amber-400');
+      }
+    }
+
+    function updateCloudStatus(text, colorClass) {
+      const dot = document.getElementById('cloud-status-dot');
+      const label = document.getElementById('cloud-status-text');
+      if (dot && label) {
+        dot.className = `w-2 h-2 rounded-full ${colorClass}`;
+        label.innerText = text;
+      }
+    }
+
+    // Verificar se existe um hash de partilha no URL
+    async function checkUrlForSharedData() {
+      const hash = window.location.hash.replace('#', '');
+      if (hash.startsWith('share=')) {
+        const shareId = hash.replace('share=', '');
+        if (shareId && db && currentUser) {
+          currentShareId = shareId;
+          const shareDocRef = doc(db, 'artifacts', appId, 'public', 'data', 'audits', shareId);
+          
+          // Escutar atualizações em tempo real
+          onSnapshot(shareDocRef, (snapshot) => {
+            if (snapshot.exists()) {
+              const data = snapshot.data();
+              applySharedState(data);
+              showToast('Dados sincronizados da nuvem!', 'fa-sync text-blue-400');
+            }
+          }, (error) => {
+            console.error("Erro ao ler dados da nuvem:", error);
+          });
+        }
+      }
+    }
+
+    // Aplicar Estado Partilhado à UI
+    function applySharedState(data) {
+      if (data.calculator) {
+        document.getElementById('input-proc').value = data.calculator.proc;
+        document.getElementById('input-ent').value = data.calculator.ent;
+        document.getElementById('input-work').value = data.calculator.work;
+        document.getElementById('input-weeks').value = data.calculator.weeks;
+        document.getElementById('input-rate').value = data.calculator.rate;
+        if (window.updateCalculator) window.updateCalculator();
+      }
+
+      if (data.checklist) {
+        Object.keys(data.checklist).forEach(key => {
+          localStorage.setItem(key, data.checklist[key] ? 'true' : 'false');
+        });
+        if (window.renderChecklists) window.renderChecklists();
+      }
+    }
+
+    // Guardar Estado na Nuvem e Gerar Link
+    window.saveAndGenerateShareLink = async function() {
+      const calculatorState = {
+        proc: parseInt(document.getElementById('input-proc').value),
+        ent: parseInt(document.getElementById('input-ent').value),
+        work: parseInt(document.getElementById('input-work').value),
+        weeks: parseInt(document.getElementById('input-weeks').value),
+        rate: parseInt(document.getElementById('input-rate').value)
+      };
+
+      const checklistState = {};
+      const allChecklistItems = [...window.CHECKLIST_CRITICOS, ...window.CHECKLIST_IMPORTANTES, ...window.CHECKLIST_OPCIONAIS];
+      allChecklistItems.forEach(item => {
+        checklistState[item.id] = localStorage.getItem(item.id) === 'true';
+      });
+
+      const auditData = {
+        calculator: calculatorState,
+        checklist: checklistState,
+        updatedAt: new Date().toISOString(),
+        author: currentUser ? currentUser.uid : 'anon'
+      };
+
+      // Se o Firebase estiver disponível, grava no Firestore
+      if (db && currentUser) {
+        try {
+          const shareId = currentShareId || 'audit_' + Math.random().toString(36).substr(2, 9);
+          currentShareId = shareId;
+
+          const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'audits', shareId);
+          await setDoc(docRef, auditData);
+
+          const shareUrl = `${window.location.origin}${window.location.pathname}#share=${shareId}`;
+          document.getElementById('share-url-input').value = shareUrl;
+          window.location.hash = `share=${shareId}`;
+          return shareUrl;
+        } catch (err) {
+          console.error("Erro ao guardar na nuvem:", err);
+        }
+      }
+
+      // Fallback Local via URL Base64
+      const jsonStr = JSON.stringify({ calc: calculatorState, chk: checklistState });
+      const encoded = btoa(jsonStr);
+      const fallbackUrl = `${window.location.origin}${window.location.pathname}#data=${encoded}`;
+      document.getElementById('share-url-input').value = fallbackUrl;
+      return fallbackUrl;
+    };
+
+    // Inicialização ao carregar
+    initCloudSync();
+  </script>
+
+  <!-- Script Principal de Lógica de UI -->
+  <script>
+    // ========== DADOS DA ANÁLISE DE RISCOS ==========
+    const RISKS_DATA = [
+      {
+        id: 'C1',
+        cat: 'comercial',
+        level: 'CRÍTICO',
+        title: 'Sem valor preenchido (R$ [VALOR DA PROPOSTA])',
+        snippet: 'Valor total: R$ [VALOR DA PROPOSTA]',
+        impact: 'Enviar proposta sem preço desvaloriza o trabalho, atrasa a negociação e entrega o controlo da precificação ao cliente.',
+        solution: 'Preencher o valor fixo entre R$ 42.000 e R$ 48.000 (sugestão: R$ 45.000).'
+      },
+      {
+        id: 'C2',
+        cat: 'comercial',
+        level: 'ALTO',
+        title: 'Sem taxa horária de referência para escopo adicional',
+        snippet: 'Necessidades adicionais poderão ser tratadas mediante ajuste...',
+        impact: 'Redação vaga. Sem taxa de referência (ex: R$ 220-250/h), qualquer pedido extra vira fonte de atrito.',
+        solution: 'Fixar taxa de R$ 220 a R$ 250/h para horas adicionais fora do escopo definido.'
+      },
+      {
+        id: 'C3',
+        cat: 'comercial',
+        level: 'MÉDIO',
+        title: 'Ausência de cláusula de mora/multa por atraso de pagamento',
+        snippet: 'Seção 16, apenas 40/30/30',
+        impact: 'Sem juros de mora e multa por atraso, o cliente não tem incentivo financeiro para pagar as faturas pontualmente.',
+        solution: 'Incluir multa de 2% + juros de mora de 1% ao mês por atraso.'
+      },
+      {
+        id: 'C4',
+        cat: 'comercial',
+        level: 'ALTO',
+        title: 'Ausência de cláusula de rescisão contratual',
+        snippet: 'Seção 20 trata apenas de aceite',
+        impact: 'Se o cliente cancelar na semana 2, não há garantia de pagamento pelo trabalho já executado.',
+        solution: 'Adicionar cláusula de rescisão imotivada com aviso prévio e pagamento pro-rata das horas trabalhadas.'
+      },
+      {
+        id: 'C5',
+        cat: 'comercial',
+        level: 'MÉDIO',
+        title: 'Sem reajuste de preço caso o kickoff atrase',
+        snippet: 'Validade da proposta: 15 dias corridos',
+        impact: 'Se o cliente assinar mas adiar o kickoff por 60 dias, o custo de oportunidade do Ivan fica preso sem compensação.',
+        solution: 'Estabelecer que se o kickoff atrasar mais de 30 dias após aprovação, o valor será reajustado.'
+      },
+      {
+        id: 'C6',
+        cat: 'comercial',
+        level: 'ALTO',
+        title: 'Âncora comercial perigosa na estimativa do MVP',
+        snippet: 'Estimativa preliminar de prazo e investimento do MVP',
+        impact: 'O cliente pode ler o número de 8-12 semanas como promessa contratual irredutível.',
+        solution: 'Reforçar a linguagem de "ordem de grandeza não vinculativa" e ampliar a faixa para 10-14 semanas solo.'
+      },
+      {
+        id: 'C7',
+        cat: 'comercial',
+        level: 'ALTO',
+        title: 'Risco de "Consultoria Commodity" (Entrega do Blueprint)',
+        snippet: 'Seção 19 (Propriedade Intelectual)',
+        impact: 'O cliente recebe 18 entregáveis detalhados e pode levar o plano para um concorrente implementar mais barato.',
+        solution: 'Separar explicitamente entregáveis do cliente de metodologias e templates genéricos da NaEsquina.'
+      },
+      {
+        id: 'C8',
+        cat: 'comercial',
+        level: 'BAIXO',
+        title: 'Ausência de cláusula de reembolso de despesas',
+        snippet: 'Formato de execução: Remoto',
+        impact: 'Se surgirem custos imprevistos de deslocação ou licenças temporárias, não há previsão de reembolso.',
+        solution: 'Adicionar cláusula de que despesas extraordinárias aprovadas previamente serão reembolsadas.'
+      },
+      {
+        id: 'E1',
+        cat: 'escopo',
+        level: 'ALTO',
+        title: 'Subdimensionamento do Mapeamento de Processos',
+        snippet: 'Até nove processos (15 campos por processo)',
+        impact: '9 processos × 15 campos exigem ~36h a 54h só de documentação detalhada. Subestimado na proposta.',
+        solution: 'Definir critérios claros de seleção no kickoff ou reduzir para 6-7 processos prioritários.'
+      },
+      {
+        id: 'E2',
+        cat: 'escopo',
+        level: 'MÉDIO',
+        title: 'Rodada de revisão sem janela de tempo definida',
+        snippet: 'Uma rodada consolidada de revisão',
+        impact: 'Sem prazo para feedback (ex: 5 dias), comentários do cliente podem estender o projeto indefinidamente.',
+        solution: 'Fixar prazo de 5 dias úteis para o cliente enviar a rodada de comentários.'
+      },
+      {
+        id: 'J1',
+        cat: 'juridico',
+        level: 'CRÍTICO',
+        title: 'Omissão de Cláusulas Mínimas de LGPD',
+        snippet: 'Geral na proposta',
+        impact: 'O assessment analisará dados sensíveis (CRM, financeiro, contactos). O item fora do escopo não isenta responsabilidades.',
+        solution: 'Adicionar cláusula de tratamento de dados (NaEsquina como Operadora, minimização e eliminação pós-projeto).'
+      },
+      {
+        id: 'J2',
+        cat: 'juridico',
+        level: 'CRÍTICO',
+        title: 'Confidencialidade com redação fraca',
+        snippet: 'Caso necessário, poderá ser assinado NDA...',
+        impact: 'Linguagem opcional. Transmite amadorismo no manuseio de dados estratégicos.',
+        solution: 'Trocar "poderá ser assinado" por "será firmado NDA obrigatório antes de qualquer acesso".'
+      },
+      {
+        id: 'X1',
+        cat: 'execucao',
+        level: 'CRÍTICO',
+        title: 'Cronograma de 4 semanas inviável para 1 pessoa',
+        snippet: '185h a 290h de esforço total estimado',
+        impact: 'Exige de 9,2h a 14,4h/dia de trabalho focado durante 20 dias úteis, sem qualquer margem de erro.',
+        solution: 'Aumentar o prazo para 5 ou 6 semanas ou ajustar o escopo de processos mapeados.'
+      },
+      {
+        id: 'X2',
+        cat: 'execucao',
+        level: 'ALTO',
+        title: 'Atrasos de acesso a APIs sem penalização de prazo',
+        snippet: 'Análise de APIs quando houver documentação...',
+        impact: 'Demora em aprovações no Google Ads/Conta Azul trava o entregável, mas o cliente culpa a consultoria.',
+        solution: 'Definir premissa: sem acesso em 5 dias, análise será baseada em documentação pública.'
+      }
+    ];
+
+    // ========== CHECKLIST DATA ==========
+    window.CHECKLIST_CRITICOS = [
+      { id: 'chk_1', text: 'Preencher o valor total fixo da proposta (R$ 42k - R$ 48k).' },
+      { id: 'chk_2', text: 'Inserir secção de Apresentação da NaEsquina e perfil executivo do Ivan.' },
+      { id: 'chk_3', text: 'Adicionar cláusulas de mora (multa 2% + 1% juros/mês) e rescisão pro-rata.' },
+      { id: 'chk_4', text: 'Adicionar cláusula de tratamento de dados e LGPD (Operadora x Controladora).' },
+      { id: 'chk_5', text: 'Tornar o NDA obrigatório (trocar "poderá" por "será firmado").' },
+      { id: 'chk_6', text: 'Definir janela de 5 dias úteis para revisões e cláusula de Aceite Tácito (10 dias).' }
+    ];
+
+    window.CHECKLIST_IMPORTANTES = [
+      { id: 'chk_7', text: 'Fixar taxa horária de R$ 220-250/h para escopo adicional.' },
+      { id: 'chk_8', text: 'Ajustar prazo total de execução para 5-6 semanas (ou reduzir processos).' },
+      { id: 'chk_9', text: 'Incluir cláusula de dependência de acessos (atraso do cliente estende o prazo).' },
+      { id: 'chk_10', text: 'Adicionar secção explícita de Gestão de Riscos e Mitigações.' },
+      { id: 'chk_11', text: 'Esclarecer propriedade intelectual (entregáveis vs. ativos da NaEsquina).' },
+      { id: 'chk_12', text: 'Definir foro de resolução de conflitos e legislação aplicável.' },
+      { id: 'chk_13', text: 'Ajustar estimativa do MVP para 10-14 semanas com premissas explícitas.' }
+    ];
+
+    window.CHECKLIST_OPCIONAIS = [
+      { id: 'chk_14', text: 'Adicionar 1 ou 2 minicases/referências de projetos anteriores.' },
+      { id: 'chk_15', text: 'Incluir amostra visual/mockup de um entregável de assessment.' },
+      { id: 'chk_16', text: 'Definir ferramenta oficial de comunicação e rito de status semanal.' },
+      { id: 'chk_17', text: 'Preencher todos os dados cadastrais (CNPJ/Razão Social de ambas as partes).' },
+      { id: 'chk_18', text: 'Incluir cláusula de reembolso para despesas extraordinárias aprovadas.' }
+    ];
+
+    // ========== TOP 10 AÇÕES DATA ==========
+    const TOP10_DATA = [
+      {
+        num: 1,
+        title: 'Preencher o Valor Fixo e Condições Comerciais Faltantes',
+        desc: 'Definir o valor entre R$ 42.000 e R$ 48.000, taxa horária extra (R$ 220-250/h), juros de mora e regras de rescisão.',
+        effort: '30 min',
+        impact: 'Crítico'
+      },
+      {
+        num: 2,
+        title: 'Criar a Secção "Quem é a NaEsquina"',
+        desc: 'Adicionar 1 página destacando o perfil do Ivan como Eng.º Sénior, histórico de entregas, casos de sucesso e credibilidade.',
+        effort: '45 min',
+        impact: 'Crítico'
+      },
+      {
+        num: 3,
+        title: 'Endurecer Confidencialidade e Adicionar Mínimo de LGPD',
+        desc: 'Trocar "poderá ser assinado NDA" por "será firmado". Adicionar cláusula padrão de tratamento de dados pessoais.',
+        effort: '30 min',
+        impact: 'Crítico'
+      },
+      {
+        num: 4,
+        title: 'Estabelecer Janela de Revisão e Aceite Tácito',
+        desc: 'Fixar 5 dias úteis para envio de comentários pelo cliente e 10 dias úteis para aceite tácito após entrega final.',
+        effort: '15 min',
+        impact: 'Alto'
+      },
+      {
+        num: 5,
+        title: 'Blindar o Cronograma Contra Atrasos de Acesso do Cliente',
+        desc: 'Adicionar cláusula informando que faltas de acesso estendem o prazo proporcionalmente sem alterar o valor.',
+        effort: '20 min',
+        impact: 'Alto'
+      },
+      {
+        num: 6,
+        title: 'Adicionar Tabela de Gestão de Riscos do Projeto',
+        desc: 'Listar de 5 a 7 riscos operacionais (qualidade de dados, APIs, agenda de entrevistados) com respetivas mitigações.',
+        effort: '30 min',
+        impact: 'Alto'
+      },
+      {
+        num: 7,
+        title: 'Reavaliar a Duração do Projeto (4 sem vs. 5-6 sem)',
+        desc: 'Ajustar a proposta para 5 ou 6 semanas para viabilizar as ~240h de trabalho solo com qualidade e sem burnout.',
+        effort: '15 min',
+        impact: 'Alto'
+      },
+      {
+        num: 8,
+        title: 'Detalhar os Direitos de Propriedade Intelectual',
+        desc: 'Especificar licença perpétua para o cliente usar os entregáveis, retendo os direitos dos métodos genéricos da NaEsquina.',
+        effort: '20 min',
+        impact: 'Médio'
+      },
+      {
+        num: 9,
+        title: 'Ajustar a Estimativa da Fase de MVP (10–14 semanas)',
+        desc: 'Ampliar a faixa estimada do MVP de 8-12 para 10-14 semanas para alinhar expectativas reais de desenvolvimento solo.',
+        effort: '10 min',
+        impact: 'Médio'
+      },
+      {
+        num: 10,
+        title: 'Preencher Placeholders e Fazer Revisão Final',
+        desc: 'Completar número da proposta, nomes, CNPJs, e verificar consistência de formatação no documento final.',
+        effort: '20 min',
+        impact: 'Médio'
+      }
+    ];
+
+    // ========== NAVEGAÇÃO ENTRE ABAS ==========
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+      const selectedTab = document.getElementById(tabId);
+      if (selectedTab) selectedTab.classList.remove('hidden');
+
+      const activeBtn = document.querySelector(`[data-tab="${tabId}"]`);
+      if (activeBtn) activeBtn.classList.add('active');
+
+      if (tabId === 'dashboard') initChart();
+    }
+
+    // ========== FILTRO DE RISCOS ==========
+    function filterRisks(cat) {
+      document.querySelectorAll('.risk-filter').forEach(btn => {
+        if (btn.getAttribute('data-risk-cat') === cat) {
+          btn.classList.add('bg-blue-600', 'text-white');
+          btn.classList.remove('bg-slate-800', 'text-slate-300');
+        } else {
+          btn.classList.remove('bg-blue-600', 'text-white');
+          btn.classList.add('bg-slate-800', 'text-slate-300');
+        }
+      });
+
+      renderRisks(cat);
+    }
+
+    function renderRisks(category = 'all') {
+      const container = document.getElementById('risks-container');
+      if (!container) return;
+
+      const filtered = category === 'all' 
+        ? RISKS_DATA 
+        : RISKS_DATA.filter(r => r.cat === category);
+
+      container.innerHTML = filtered.map(r => {
+        let badgeColor = 'bg-slate-700 text-slate-300';
+        if (r.level === 'CRÍTICO') badgeColor = 'bg-red-500/20 text-red-300 border-red-500/30';
+        if (r.level === 'ALTO') badgeColor = 'bg-amber-500/20 text-amber-300 border-amber-500/30';
+        if (r.level === 'MÉDIO') badgeColor = 'bg-blue-500/20 text-blue-300 border-blue-500/30';
+
+        return `
+          <div class="glass-card rounded-2xl p-4 border border-slate-800 space-y-2">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
+              <div class="flex items-center gap-2">
+                <span class="text-xs font-bold text-slate-400 font-mono">[${r.id}]</span>
+                <h3 class="font-bold text-sm text-white">${r.title}</h3>
+              </div>
+              <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeColor}">${r.level}</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs pt-1">
+              <div class="space-y-1">
+                <span class="text-slate-500 font-semibold block">Trecho afetado / Contexto:</span>
+                <p class="text-slate-400 italic bg-slate-900/60 p-2 rounded-lg border border-slate-800 font-mono text-[11px]">"${r.snippet}"</p>
+                <p class="text-slate-300 mt-1">${r.impact}</p>
+              </div>
+
+              <div class="space-y-1 bg-emerald-950/20 p-2.5 rounded-xl border border-emerald-500/20">
+                <span class="text-emerald-400 font-bold block flex items-center gap-1">
+                  <i class="fas fa-check-circle"></i> Solução Recomendada:
+                </span>
+                <p class="text-slate-200">${r.solution}</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ========== CALCULADORA & SIMULADOR ==========
+    window.updateCalculator = function() {
+      const proc = parseInt(document.getElementById('input-proc').value);
+      const ent = parseInt(document.getElementById('input-ent').value);
+      const work = parseInt(document.getElementById('input-work').value);
+      const weeks = parseInt(document.getElementById('input-weeks').value);
+      const rate = parseInt(document.getElementById('input-rate').value);
+
+      document.getElementById('val-proc').innerText = `${proc} processos`;
+      document.getElementById('val-ent').innerText = `${ent} entrevistas`;
+      document.getElementById('val-work').innerText = `${work} workshops`;
+      document.getElementById('val-weeks').innerText = `${weeks} semanas`;
+      document.getElementById('val-rate').innerText = `R$ ${rate} / h`;
+
+      const procHours = proc * 5.5;
+      const entHours = ent * 2.0;
+      const workHours = work * 5.0;
+      const fixedHours = 105;
+
+      const totalHours = Math.round(procHours + entHours + workHours + fixedHours);
+      const workDays = weeks * 5;
+      const dailyHours = (totalHours / workDays).toFixed(1);
+      const totalPrice = totalHours * rate;
+
+      document.getElementById('calc-total-hours').innerText = `${totalHours} h`;
+      document.getElementById('calc-daily-hours').innerText = `${dailyHours} h/d`;
+      document.getElementById('calc-total-price').innerText = `R$ ${totalPrice.toLocaleString('pt-BR')}`;
+
+      const statusDaily = document.getElementById('calc-daily-status');
+
+      if (parseFloat(dailyHours) > 10.0) {
+        statusDaily.innerText = '🔴 Inviável Solo (Risco Extremo)';
+        statusDaily.className = 'text-[10px] text-red-400 font-bold block';
+      } else if (parseFloat(dailyHours) > 8.0) {
+        statusDaily.innerText = '⚠️ Sobrecarga Alta';
+        statusDaily.className = 'text-[10px] text-amber-400 font-bold block';
+      } else {
+        statusDaily.innerText = '🟢 Carga Sustentável';
+        statusDaily.className = 'text-[10px] text-emerald-400 font-bold block';
+      }
+
+      document.getElementById('m-1').innerText = `R$ ${Math.round(totalPrice * 0.4).toLocaleString('pt-BR')}`;
+      document.getElementById('m-2').innerText = `R$ ${Math.round(totalPrice * 0.4).toLocaleString('pt-BR')}`;
+      document.getElementById('m-3').innerText = `R$ ${Math.round(totalPrice * 0.2).toLocaleString('pt-BR')}`;
+
+      document.getElementById('tier-piso').innerText = `R$ ${(totalHours * 140).toLocaleString('pt-BR')}`;
+      document.getElementById('tier-comp').innerText = `R$ ${(totalHours * 160).toLocaleString('pt-BR')}`;
+      document.getElementById('tier-recom').innerText = `R$ ${(totalHours * 180).toLocaleString('pt-BR')} - ${(totalHours * 200).toLocaleString('pt-BR')}`;
+      document.getElementById('tier-prem').innerText = `R$ ${(totalHours * 220).toLocaleString('pt-BR')} - ${(totalHours * 250).toLocaleString('pt-BR')}`;
+    };
+
+    // ========== CHECKLIST RENDER & STORAGE ==========
+    window.renderChecklists = function() {
+      const renderSection = (items, elementId) => {
+        const container = document.getElementById(elementId);
+        if (!container) return;
+
+        container.innerHTML = items.map(item => {
+          const isChecked = localStorage.getItem(item.id) === 'true';
+          return `
+            <label class="flex items-start gap-3 p-2.5 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-slate-700 cursor-pointer select-none transition">
+              <input 
+                type="checkbox" 
+                id="${item.id}" 
+                ${isChecked ? 'checked' : ''} 
+                onchange="toggleCheckItem('${item.id}')"
+                class="mt-0.5 w-4 h-4 rounded border-slate-700 text-blue-600 focus:ring-blue-500 bg-slate-800"
+              >
+              <span class="${isChecked ? 'line-through text-slate-500' : 'text-slate-200'} font-medium">${item.text}</span>
+            </label>
+          `;
+        }).join('');
+      };
+
+      renderSection(window.CHECKLIST_CRITICOS, 'checklist-criticos');
+      renderSection(window.CHECKLIST_IMPORTANTES, 'checklist-importantes');
+      renderSection(window.CHECKLIST_OPCIONAIS, 'checklist-opcionais');
+
+      updateChecklistProgress();
+    };
+
+    function toggleCheckItem(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        localStorage.setItem(id, el.checked ? 'true' : 'false');
+      }
+      window.renderChecklists();
+    }
+
+    function updateChecklistProgress() {
+      const allItems = [...window.CHECKLIST_CRITICOS, ...window.CHECKLIST_IMPORTANTES, ...window.CHECKLIST_OPCIONAIS];
+      const total = allItems.length;
+      let checkedCount = 0;
+
+      allItems.forEach(item => {
+        if (localStorage.getItem(item.id) === 'true') checkedCount++;
+      });
+
+      const pct = Math.round((checkedCount / total) * 100);
+      document.getElementById('checklist-progress-text').innerText = `${checkedCount} / ${total}`;
+      document.getElementById('checklist-progress-bar').style.width = `${pct}%`;
+    }
+
+    // ========== TOP 10 RENDER ==========
+    function renderTop10() {
+      const container = document.getElementById('top10-container');
+      if (!container) return;
+
+      container.innerHTML = TOP10_DATA.map(item => `
+        <div class="glass-card rounded-2xl p-4 border border-slate-800 flex items-start gap-4">
+          <div class="w-8 h-8 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-300 flex items-center justify-center font-black text-sm shrink-0">
+            ${item.num}
+          </div>
+          <div class="flex-1 space-y-1">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <h3 class="font-bold text-sm text-white">${item.title}</h3>
+              <div class="flex items-center gap-2 text-[10px]">
+                <span class="px-2 py-0.5 rounded-full bg-slate-800 text-slate-300 font-medium"><i class="far fa-clock mr-1"></i>${item.effort}</span>
+                <span class="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-bold border border-purple-500/30">${item.impact}</span>
+              </div>
+            </div>
+            <p class="text-xs text-slate-300 leading-relaxed">${item.desc}</p>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // ========== CHART.JS INIT ==========
+    let chartInstance = null;
+    function initChart() {
+      const ctx = document.getElementById('effortChart')?.getContext('2d');
+      if (!ctx) return;
+
+      if (chartInstance) chartInstance.destroy();
+
+      chartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: [
+            'Mapeamento Processos (9)',
+            'Wireframes Cockpit',
+            'Análise Técnica / APIs',
+            'Entrevistas (10)',
+            'Relatório Executivo',
+            'Workshops (3)',
+            'Arquitetura & Segurança',
+            'Gestão & Revisões'
+          ],
+          datasets: [{
+            label: 'Horas Estimadas',
+            data: [54, 28, 25, 20, 20, 15, 16, 16],
+            backgroundColor: [
+              'rgba(59, 130, 246, 0.8)',
+              'rgba(99, 102, 241, 0.8)',
+              'rgba(168, 85, 247, 0.8)',
+              'rgba(16, 185, 129, 0.8)',
+              'rgba(245, 158, 11, 0.8)',
+              'rgba(236, 72, 153, 0.8)',
+              'rgba(14, 165, 233, 0.8)',
+              'rgba(100, 116, 139, 0.8)'
+            ],
+            borderRadius: 8,
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (ctx) => `${ctx.raw} horas reais`
+              }
+            }
+          },
+          scales: {
+            x: {
+              grid: { display: false },
+              ticks: { color: '#94a3b8', font: { size: 10 } }
+            },
+            y: {
+              grid: { color: 'rgba(255, 255, 255, 0.05)' },
+              ticks: { color: '#94a3b8', font: { size: 10 } }
+            }
+          }
+        }
+      });
+    }
+
+    // ========== PARTILHA & COPIAR CLIPBOARD ==========
+    async function openShareModal() {
+      document.getElementById('share-modal').classList.remove('hidden');
+      if (window.saveAndGenerateShareLink) {
+        await window.saveAndGenerateShareLink();
+      } else {
+        document.getElementById('share-url-input').value = window.location.href;
+      }
+    }
+
+    function closeShareModal() {
+      document.getElementById('share-modal').classList.add('hidden');
+    }
+
+    function copyShareUrl() {
+      const input = document.getElementById('share-url-input');
+      if (input) {
+        input.select();
+        document.execCommand('copy');
+        showToast('Link de acesso copiado para a área de transferência!', 'fa-link text-blue-400');
+      }
+    }
+
+    function copyExecutiveSummary() {
+      const text = `📌 *Cockpit NaEsquina — Análise da Proposta Assessment*
+• *Veredicto:* NÃO ENVIAR (4 Bloqueadores Fatais)
+• *Preço Recomendado:* R$ 45.000 (~240h de esforço real)
+• *Prazo Exequível:* 5 a 6 semanas (ou redução de escopo)
+• *Top 4 Ações:* Preencher preço fixo, incluir Apresentação da NaEsquina, blindar LGPD/NDA e fixar janelas de aceite.
+
+Aceda ao cockpit interativo: ${window.location.href}`;
+
+      const dummy = document.createElement("textarea");
+      document.body.appendChild(dummy);
+      dummy.value = text;
+      dummy.select();
+      document.execCommand('copy');
+      document.body.removeChild(dummy);
+
+      showToast('Resumo executivo copiado!', 'fa-file-alt text-indigo-400');
+    }
+
+    function shareViaNative() {
+      if (navigator.share) {
+        navigator.share({
+          title: 'Cockpit NaEsquina — Análise de Proposta',
+          text: 'Análise crítica e simulador de esforço da Proposta de Assessment Cockpit AI-First.',
+          url: window.location.href
+        }).catch(() => {});
+      } else {
+        copyShareUrl();
+      }
+    }
+
+    function showToast(message, iconClass = 'fa-check text-emerald-400') {
+      const toast = document.getElementById('toast');
+      const toastMsg = document.getElementById('toast-message');
+      const toastIcon = document.getElementById('toast-icon');
+
+      if (!toast || !toastMsg) return;
+
+      toastMsg.innerText = message;
+      if (toastIcon) toastIcon.className = `fas ${iconClass}`;
+
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
+    }
+
+    // Inicialização ao carregar
+    document.addEventListener('DOMContentLoaded', () => {
+      renderRisks('all');
+      window.updateCalculator();
+      window.renderChecklists();
+      renderTop10();
+      initChart();
+    });
+  </script>
+</body>
+</html>
+
